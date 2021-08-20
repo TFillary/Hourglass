@@ -6,7 +6,7 @@
 #               Inspiration from https://hackaday.io/project/165620-digital-hourglass, but developed from scratch
 #               Can take any 'typical' hourglass graphic and work out where to fill it (amount of fill can be changed)
 # Author      : Trevor Fillary
-# modification: 18-08-2021
+# modification: 20-08-2021
 ########################################################################
 
 import smbus			#import SMBus module of I2C
