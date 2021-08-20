@@ -3,6 +3,8 @@
 # Filename    : hourglass.py
 # Description :	Application to use the Pirate Audio board with 240x240 pixel screen + 4 buttons to
 #               run an hourglass using a gyro/accelerometer board to control it.
+#               Inspiration from https://hackaday.io/project/165620-digital-hourglass, but developed from scratch
+#               Can take any 'typical' hourglass graphic and work out where to fill it (amount of fill can be changed)
 # Author      : Trevor Fillary
 # modification: 18-08-2021
 ########################################################################
@@ -32,6 +34,13 @@ ACCEL_ZOUT_H = 0x3F
 GYRO_XOUT_H  = 0x43
 GYRO_YOUT_H  = 0x45
 GYRO_ZOUT_H  = 0x47
+
+# Gravity definitions
+Flat = 0
+Upside_Down = 1
+Rightway_up = 2
+GravityLeft = 3
+GravityRight =4
 
 # Definitions for the screen
 SCREEN_SIZE = 240 # 240x240 square
@@ -126,38 +135,73 @@ def read_gyro_data():
     print ("Gx=%.2f" %Gx, u'\u00b0'+ "/s", "\tGy=%.2f" %Gy, u'\u00b0'+ "/s", "\tGz=%.2f" %Gz, u'\u00b0'+ "/s", "\tAx=%.2f g" %Ax, "\tAy=%.2f g" %Ay, "\tAz=%.2f g" %Az) 	
 
 def read_gyro_xy():
-    # Cut down routine to just read the x and y accelerometer values used.  Return integers for direct x & y use
+    # Cut down routine to just read the x and y accelerometer values used.  
+    # Ax and Ay are used to determine the orientation of the hourglass, either Upright/Upside down/Left down/Right down
+    # Return gravity direction and whether there is a tilt in progress
     
     # Read Accelerometer raw value
     acc_x = read_raw_data(ACCEL_XOUT_H)
     acc_y = read_raw_data(ACCEL_YOUT_H)
 
-    #Full scale range +/- 250 degree/C as per sensitivity scale factor
-    #Ax = acc_x/4087.0      # was 16384 but 4096 (/4) seems to work better for this application when need to step a pixel at a time
-    #Ay = acc_y/4087.0
-    Ax = acc_x/16384.0      
-    Ay = acc_y/16384.0
-
-    #print(Ax,Ay)
+    Ay = acc_x/16384.0      # x & y swaped due to sensor orientationin the Pi Zero case
+    Ax = acc_y/16384.0
 
     # Ax and Ay are used to determine the orientation of the hourglass, either Upright/Upside down/Left down/Right down
 
-    # Used to adjust when the tilt comes into affect
-    if Ax > 0.35:
-        Ax = 1
-    elif Ax < -0.35:
-        Ax = -1
-    #else:
-    #    Ax = 0
+    Tiltleft = False
+    Tiltright = False
 
-    if Ay > 0.35:
-        Ay = 1
-    elif Ay < -0.35:
-        Ay = -1
-    #else:
-    #    Ay = 0
+    # Used to establish gravity direction
+    Direction = Flat  # default - ie gravity has no effect on the grains
 
-    return int(Ax), int(Ay)  # return integer steps
+    if Ay > 0.7:
+        Direction = Upside_Down
+        # Set tilt limits
+        if Ax >0.15 and Ax <0.75:
+            # Upside down bottom right 
+            Tiltright = True
+
+        if Ax <-0.15 and Ax >-0.75:
+            # Upside down bottom left 
+            Tiltleft = True
+
+    elif Ay < -0.7:
+        Direction = Rightway_up
+        # Set tilt limits
+        if Ax >0.15 and Ax <0.75:
+            # Upright bottom left 
+            Tiltleft = True
+
+        if Ax <-0.15 and Ax >-0.75:
+            # Upright bottom right 
+            Tiltright = True
+
+    elif Ax > 0.7:
+        Direction = GravityLeft
+        # Set tilt limits
+        if Ay >0.15 and Ay <0.75:
+            # Left bottom left 
+            Tiltleft = True
+        
+        if Ay <-0.15 and Ay >-0.75:
+            # Left bottom right
+            Tiltright = True
+
+    elif Ax < -0.7:
+        Direction = GravityRight
+        # Set tilt limits
+        if Ay >0.15 and Ay <0.75:
+            # Right bottom left 
+            Tiltright = True
+        
+        if Ay <-0.15 and Ay >-0.75:
+            # Right bottom right
+            Tiltleft = True
+
+    print(Ax,Ay)
+    print(Direction, Tiltleft, Tiltright)
+
+    return Direction, Tiltleft, Tiltright
 
 def draw_menu():
     global image, pixels, draw
@@ -362,9 +406,12 @@ def reorder_grains(row_start, row_end):
 
 def update_grains():
     global sorted_grains
-    # Cycles through the grains to move them to the next available space either one below, lower left or lower right
+    # Cycles through the grains to move them to the next available space either one below, lower left or lower right, 
+    # or when tilting to the left or right.
     # The grain movement parameters are adjusted to account for the orientation of the hourglass
     # Function runs until there are no more grains to move or runs continuously
+    # Algorithm is: No tilt- try moving grain straight down first then attempt to move down at 45 deg (left or right)
+    #               A tilt - try moving grain down at 45 deg first then attempt to move just left/right
     
     update_count = 1 # set to 1 to get started on main loop
     total_move_count = 0
@@ -376,19 +423,37 @@ def update_grains():
         update_count = 0 # Reset for current pass of the grains
         toggle = True # Used to toggle checking left/right first
         
-        ay, ax = read_gyro_xy() # Note x & y swapped here due to orientation of sensor in the pi Zero case.
+        # Get gyro info 
+        Direction, Tiltleft, Tiltright = read_gyro_xy() 
         
-        if ay == -1: 
-            # upright
-            step_x = 0 # step x & y are to select next step down, ie straight down
-            step_y = 1 # +ve down
-            x_left = -1
-            x_right = 1
-            y_left = 0 # not used when upright
-            y_right = 0
+        if Direction == Rightway_up: 
+            if Tiltleft:
+                step_x = -1 # step x & y are to select next step down, ie 45 deg for a tilt
+                step_y = 1 # +ve down
+                x_left = 0 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
+                x_right = 0
+                y_left = -1 # effectively just go left 
+                y_right = 0
+
+            elif Tiltright:
+                step_x = 1 # step x & y are to select next step down, ie 45 deg for a tilt
+                step_y = 1 # +ve down
+                x_left = 0 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
+                x_right = 0 
+                y_left = 0 
+                y_right = -1 # effectively just go right
+
+            else:
+                # No tilt
+                step_x = 0 # step x & y are to select next step down, ie straight down
+                step_y = 1 # +ve down
+                x_left = -1 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
+                x_right = 1 # Change to 45 deg
+                y_left = 0 # not used when upright
+                y_right = 0
         
-        if ay == 1:
-            # upside down
+        elif Direction == Upside_Down:
+            # TODO: upside down
             step_x = 0 # step x & y are to select next step down, ie straight down
             step_y = -1 # -ve down
             x_left = 1
@@ -396,26 +461,70 @@ def update_grains():
             y_left = 0 # not used when upside down
             y_left = 0
 
-        if ax == 1:
+        elif Direction == GravityLeft:
             # left side down so swap axis, ie x axis now controls 'gravity' direction and y across the hourglass
-            step_x = -1
-            step_y = 0
-            x_left = 0 # not used when on left side
-            x_right = 0
-            y_left = -1
-            y_right = 1
+            if Tiltleft:
+                step_x = -1 
+                step_y = -1 
+                x_left = 1 
+                x_right = 0
+                y_left = 0 
+                y_right = 0
 
-        if ax == -1:
+            elif Tiltright:
+                step_x = -1 
+                step_y = 1 
+                x_left = 0 
+                x_right = 1 
+                y_left = 0 
+                y_right = 0
+
+            else:
+                # No tilt
+                step_x = -1 
+                step_y = 0 
+                x_left = 0 
+                x_right = 0
+                y_left = -1
+                y_right = 1
+
+        elif Direction == GravityRight:
             # right side down so swap axis, ie x axis now controls 'gravity' direction and y across the hourglass
-            step_x = 1
+            if Tiltleft:
+                step_x = 1 
+                step_y = 1 
+                x_left = -1 
+                x_right = 0
+                y_left = 0 
+                y_right = 0
+
+            elif Tiltright:
+                step_x = 1 
+                step_y = -1 
+                x_left = 0 
+                x_right = -1 
+                y_left = 0 
+                y_right = 0
+
+            else:
+                # No tilt
+                step_x = 1 
+                step_y = 0 
+                x_left = 0 
+                x_right = 0
+                y_left = 1
+                y_right = -1
+
+        elif Direction == Flat: # Nothing to do....
+            step_x = 0
             step_y = 0
-            x_left = 0 # not used when on left side
+            x_left = 0 
             x_right = 0
-            y_left = 1
-            y_right = -1
+            y_left = 0
+            y_right = 0            
         
 
-        #print(ax, ay, step_x,step_y,x_left,x_right,y_left,y_right)
+        print(Direction, step_x,step_y,x_left,x_right,y_left,y_right)
 
         for i in range(0, len(grains)):
             # Check all grains in this pass
