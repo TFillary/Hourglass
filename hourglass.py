@@ -198,8 +198,8 @@ def read_gyro_xy():
             # Right bottom right
             Tiltleft = True
 
-    print(Ax,Ay)
-    print(Direction, Tiltleft, Tiltright)
+    #print(Ax,Ay)
+    #print(Direction, Tiltleft, Tiltright)
 
     return Direction, Tiltleft, Tiltright
 
@@ -453,13 +453,30 @@ def update_grains():
                 y_right = 0
         
         elif Direction == Upside_Down:
-            # TODO: upside down
-            step_x = 0 # step x & y are to select next step down, ie straight down
-            step_y = -1 # -ve down
-            x_left = 1
-            x_right = -1
-            y_left = 0 # not used when upside down
-            y_left = 0
+            if Tiltleft:
+                step_x = 1 # step x & y are to select next step down, ie 45 deg for a tilt
+                step_y = -1 # -ve down
+                x_left = 0 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
+                x_right = 0
+                y_left = 1 # effectively just go left 
+                y_right = 0
+
+            elif Tiltright:
+                step_x = -1 # step x & y are to select next step down, ie 45 deg for a tilt
+                step_y = -1 # +ve down
+                x_left = 0 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
+                x_right = 0 
+                y_left = 0 
+                y_right = 1 # effectively just go right
+
+            else:
+                # No tilt
+                step_x = 0 # step x & y are to select next step down, ie straight down
+                step_y = -1 # -ve down
+                x_left = 1
+                x_right = -1
+                y_left = 0 # not used when upside down
+                y_left = 0
 
         elif Direction == GravityLeft:
             # left side down so swap axis, ie x axis now controls 'gravity' direction and y across the hourglass
@@ -524,7 +541,7 @@ def update_grains():
             y_right = 0            
         
 
-        print(Direction, step_x,step_y,x_left,x_right,y_left,y_right)
+        #print(Direction, step_x,step_y,x_left,x_right,y_left,y_right)
 
         for i in range(0, len(grains)):
             # Check all grains in this pass
