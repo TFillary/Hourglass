@@ -76,10 +76,21 @@ TIMING = 1
 MENU = 2 
 FINISHED = 3
 CONTINUOUS = 4
-TEST = 5
+SET_MENU = 5
+SET = 6
+CAL = 7
+WAIT = 8
 NULL = 99
 mode = MENU  # default to menu at start
 
+# Stat variables
+total_move_count = 0
+pass_count = 0
+pass_delay = 0 # Used to delay the passes to match the required delay - needs to be calibrated first!!
+
+# Used to set the reqired timing period
+set_time = 3 # Default to 3 minutes
+cal_time = 0
 
 def MPU_Init():
     #write to sample rate register
@@ -207,7 +218,7 @@ def draw_menu():
     global image, pixels, draw
     image = Image.open("hourglass.bmp") # Load initial picture
     draw = ImageDraw.Draw(image) # Setup so can draw on the screen for menu etc.
-    pixels = image.load()  # Load image into memory for pixes access later - check for collisions etc.
+    pixels = image.load()  # Load image into memory for pixel access later - check for collisions etc.
 
         # Now to add some text for the buttons.....
     font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 16) # Create our font, passing in the font file and font size
@@ -219,12 +230,10 @@ def draw_menu():
     #draw.text((50, 20), "Hourglass", font = font2, fill = ("#eba414")) # Title
 
     txt_colour = (0,0,0)
-    draw.text((5, 60), "Timer", font = font, fill = txt_colour) # A button
-    
-    #TODO - DELETE??
-    #draw.text((5, 180), "Generate", font = font, fill = txt_colour) # B button
+    draw.text((5, 60), "Time", font = font, fill = txt_colour) # A button
+    draw.text((5, 180), "Set", font = font, fill = txt_colour) # B button    
     draw.text((156, 60), "Continuous", font = font, fill = txt_colour) # X button
-    #draw.text((170, 180), "Easy", font = font, fill = txt_colour) # Y button
+    draw.text((170, 180), "Cal", font = font, fill = txt_colour) # Y button
 
     #draw.text((190, 120), str(get_difficulty()+1), font = font2, fill = (0,255,0))
     #draw.line((195, 80, 195, 120), width=4, fill=(255, 0, 0))
@@ -236,6 +245,58 @@ def draw_menu():
 
     # draw menu
     st7789.display(image)
+
+def draw_set():
+    # Draw set image screen
+    set_image = Image.new('RGB', (240,240), color = (255,255,255)) # Create a white screen
+    draw = ImageDraw.Draw(set_image) # Setup so can draw on the screen for menu etc.
+    
+        # Now to add some text for the buttons.....
+    font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 16) # Create our font, passing in the font file and font size
+    font2 = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 24) # Create our font, passing in the font file and font size
+
+    # TODO - Fix tite size/pos
+    # Rectangle for title
+    #draw.rectangle((40, 18, 200, 50), outline = ("black"))
+    #draw.text((50, 20), "Hourglass", font = font2, fill = ("#eba414")) # Title
+
+    txt_colour = (0,0,0)
+    draw.text((5, 60), "1.5 Seconds", font = font, fill = txt_colour) # A button
+    draw.text((5, 180), "6 Seconds", font = font, fill = txt_colour) # B button    
+    draw.text((156, 60), "3 Seconds", font = font, fill = txt_colour) # X button
+    draw.text((156, 180), "10 Seconds", font = font, fill = txt_colour) # Y button
+
+    # draw Set screen
+    st7789.display(set_image)
+
+# TODO - Update
+def draw_completed():
+    # Draw completed image screen
+    completed_image = Image.new('RGB', (240,240), color = (255,255,255)) # Create a white screen
+    draw = ImageDraw.Draw(completed_image) # Setup so can draw on the screen for menu etc.
+    
+    # Now to add some text 
+    font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 16) # Create our font, passing in the font file and font size
+    font2 = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 24) # Create our font, passing in the font file and font size
+
+    # Success image
+    #image2 = Image.open("success.png")
+    #image2 = image2.resize((100,100)) 
+    #image.paste(image2, (70,10)) # onto screen
+
+    draw.text((40, 50), "TIME'S UP", font = font2, fill = ("red"))
+
+    txt = "No. Passes: {}".format(pass_count)
+    draw.text((20, 100), txt, font = font, fill = ("black"))
+
+    txt = "No Moves: {}".format(total_move_count)
+    draw.text((20, 140), txt, font = font, fill = ("black"))
+
+    txt = "Time Taken: \n{:.2f}, seconds".format(duration)
+    draw.text((20, 180), txt, font = font, fill = ("black"))
+
+    # draw completed screen
+    st7789.display(completed_image)
 
 def analyse_hourglass_graphic():
     global pixels, HOURGLASS_TOP_Y, HOURGLASS_BOTTOM_Y, HOURGLASS_CENTRE_X, HOURGLASS_CENTRE_Y
@@ -405,7 +466,7 @@ def reorder_grains(row_start, row_end):
 
 
 def update_grains():
-    global sorted_grains
+    global sorted_grains, total_move_count, pass_count, pass_delay
     # Cycles through the grains to move them to the next available space either one below, lower left or lower right, 
     # or when tilting to the left or right.
     # The grain movement parameters are adjusted to account for the orientation of the hourglass
@@ -414,6 +475,7 @@ def update_grains():
     #               A tilt - try moving grain down at 45 deg first then attempt to move just left/right
     
     update_count = 1 # set to 1 to get started on main loop
+    # init stat variables - only valid if run during a standard timing run
     total_move_count = 0
     pass_count = 0
 
@@ -618,62 +680,62 @@ def update_grains():
 
         # Update screen to display all grains moved this pass
         st7789.display(image)
-        #time.sleep(0.13)
-
-
-# TODO - delete this function?????
-def draw_completed(duration):
-    global image, draw
-    image = Image.new("RGB", (SCREEN_SIZE, SCREEN_SIZE), ("#99ccff")) # Make initial board bluish..
-    draw = ImageDraw.Draw(image) # Setup so can draw on the screen for menu etc.
-
-    # Success image
-    image2 = Image.open("success.png")
-    image2 = image2.resize((100,100)) 
-    image.paste(image2, (70,10)) # onto screen
-
-    # Now to add some text as well.....
-    font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 24) # Create our font, passing in the font file and font size
-    draw.text((20, 115), "Maze Completed", font = font, fill = ("red"))
-
-    txt = "Time Taken: \n{:.2f}, seconds".format(duration)
-    draw.text((20, 150), txt, font = font, fill = ("red"))
-
-    # draw menu
-    st7789.display(image)
+        
+        if pass_delay != 0:
+            time.sleep((pass_delay-0.012)) # subtracted 12ms fudge factor to cal!!
 
 
 def btn1handler():
-    global mode
+    global mode, set_time
     # If TIMING or FINISHED, any button press will go back to the menu
     if mode == TIMING or mode == FINISHED:
         mode = MENU
+    elif mode == SET:
+        set_time = 1.5 # Minutes
+        mode = MENU
+    elif mode == WAIT:
+        mode = MENU        
     else: # Menu option for button A is to start timer
         mode = TIMING
 
 def btn2handler():
-    global mode
+    global mode, set_time
     # If TIMING or FINISHED, any button press will go back to the menu
     if mode == TIMING or mode == FINISHED:
         mode = MENU
-    else: # Select test mode to see gyro output - Test button not shown in menu
-        mode = TEST
+    elif mode == SET:
+        set_time = 6 # Minutes
+        mode = MENU
+    elif mode == WAIT:
+        mode = MENU           
+    else: # Menu option for button B is to set timer duration
+        mode = SET_MENU
 
 def btn3handler():
-    global mode
+    global mode, set_time
     # If TIMING or FINISHED, any button press will go back to the menu
     if mode == TIMING or mode == FINISHED:
         mode = MENU
+    elif mode == SET:
+        set_time = 3 # Minutes
+        mode = MENU
+    elif mode == WAIT:
+        mode = MENU   
     else: # Menu option for button X is to run hourglass continuously
         mode = CONTINUOUS
 
 def btn4handler():
-    global mode
+    global mode, set_time
     # If TIMING or FINISHED, any button press will go back to the menu
     if mode == TIMING or mode == FINISHED:
         mode = MENU
-    else: # Menu option TBC
+    elif mode == SET:
+        set_time = 10 # Minutes
         mode = MENU
+    elif mode == WAIT:
+        mode = MENU           
+    else: # Menu option for button Y is to run the calibration
+        mode = CAL
 
 # Setup gyro object
 bus = smbus.SMBus(1) 	# or bus = smbus.SMBus(0) for older version boards
@@ -710,6 +772,8 @@ while True:
     # TODO: Run timing for specified time
     if mode == TIMING:
         game_start = time.time()
+        if pass_delay != 0:  # Only update if has been through a calibration
+            pass_delay = (set_time*60/pass_count) - (cal_time/pass_count)
         update_grains()
         mode = FINISHED
 
@@ -718,10 +782,18 @@ while True:
         update_grains()
         mode = MENU
 
-    # Non visible test mode to show raw gyro data read
-    elif mode == TEST:
-        read_gyro_data()
-        time.sleep(1)
+    # Display the timer set options
+    elif mode == SET_MENU:
+        draw_set()
+        mode = SET # Set mode for buttion selection
+        
+    elif mode == CAL:
+        cal_start = time.time()
+        update_grains()
+        cal_time = time.time() - cal_start
+        pass_delay = (set_time*60/pass_count) - (cal_time/pass_count)
+        #print(cal_time,pass_delay,pass_count, total_move_count)
+        mode = MENU # Set mode for buttion selection
 
     # Draw initial screen and menu
     elif mode == MENU:
@@ -732,12 +804,14 @@ while True:
         fill_hourglass() # Fill top of hourglass
         mode = NULL  # Dont do anything until a button is pressed.
 
+
     # TODO: complete timing finished processing
     if mode == FINISHED:
         game_end = time.time()
         duration = game_end - game_start
-        print(duration)
-        mode = NULL
+        draw_completed()
+        #print(duration)
+        mode = WAIT
 
 
     #time.sleep(0.05)
