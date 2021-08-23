@@ -86,7 +86,7 @@ mode = MENU  # default to menu at start
 # Stat variables
 total_move_count = 0
 pass_count = 0
-pass_delay = 0 # Used to delay the passes to match the required delay - needs to be calibrated first!!
+pass_delay = 0 # Used to delay the passes to match the required delay - needs to be calibrated before use - 0 means don't use!!
 
 # Used to set the reqired timing period
 set_time = 3 # Default to 3 minutes
@@ -255,11 +255,6 @@ def draw_set():
     font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 16) # Create our font, passing in the font file and font size
     font2 = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 24) # Create our font, passing in the font file and font size
 
-    # TODO - Fix tite size/pos
-    # Rectangle for title
-    #draw.rectangle((40, 18, 200, 50), outline = ("black"))
-    #draw.text((50, 20), "Hourglass", font = font2, fill = ("#eba414")) # Title
-
     txt_colour = (0,0,0)
     draw.text((5, 60), "1.5 Seconds", font = font, fill = txt_colour) # A button
     draw.text((5, 180), "6 Seconds", font = font, fill = txt_colour) # B button    
@@ -269,7 +264,6 @@ def draw_set():
     # draw Set screen
     st7789.display(set_image)
 
-# TODO - Update
 def draw_completed():
     # Draw completed image screen
     completed_image = Image.new('RGB', (240,240), color = (255,255,255)) # Create a white screen
@@ -680,8 +674,9 @@ def update_grains():
 
         # Update screen to display all grains moved this pass
         st7789.display(image)
-        
-        if pass_delay != 0:
+
+        # Don't delay in continuous mode or if no cal has been run        
+        if pass_delay != 0 and not mode == CONTINUOUS:
             time.sleep((pass_delay-0.012)) # subtracted 12ms fudge factor to cal!!
 
 
@@ -766,10 +761,7 @@ btn3.when_pressed = btn3handler
 btn4.when_pressed = btn4handler
 
 while True:
-# TODO: Add a calibrate mode to determine time taken to complete grains grain and adjust delay of
-# grain movement algorithm so that time taken to complete matches set time
 
-    # TODO: Run timing for specified time
     if mode == TIMING:
         game_start = time.time()
         if pass_delay != 0:  # Only update if has been through a calibration
@@ -804,8 +796,6 @@ while True:
         fill_hourglass() # Fill top of hourglass
         mode = NULL  # Dont do anything until a button is pressed.
 
-
-    # TODO: complete timing finished processing
     if mode == FINISHED:
         game_end = time.time()
         duration = game_end - game_start
