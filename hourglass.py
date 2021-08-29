@@ -56,11 +56,15 @@ HOURGLASS_UPRIGHT = True # Assume upright initially
 
 NO_GRAIN_ROWS = 30  # Sets number of sand rows to display
 no_grains = 0 # Number of grains in array
-GRAINS_X = 0 # Used to indx the x element of the grains list
-GRAINS_Y = 1 # Used to index the y element of the grains list
-grains = [] # Create list definition to hold each grain x,y - will grow to meet max no of grains - grains[n][GRAINS_X] or grains[n][GRAINS_Y] etc
+#GRAINS_X = 0 # Used to indx the x element of the grains list
+#GRAINS_Y = 1 # Used to index the y element of the grains list
+#grains = [] # Create list definition to hold each grain x,y - will grow to meet max no of grains - grains[n][GRAINS_X] or grains[n][GRAINS_Y] etc
 sorted_grains = [] # List of grains in a sorted order in each row - scans from centre out for each row
 
+grains_x = [0] * 2000   
+grains_y = [0] * 2000
+sorted_grains_x = [0] * 2000
+sorted_grains_y = [0] * 2000
 
 # Global image variables
 pixels = 0
@@ -384,7 +388,6 @@ def analyse_hourglass_graphic():
     HOURGLASS_CENTRE_X = int(left_x + ((right_x - left_x)/2))
 
 def fill_hourglass():
-    global sorted_grains
     # Routine to fill the top half of the hourglass (up to the max number of rows)
 
     for i in range(HOURGLASS_CENTRE_Y,(HOURGLASS_CENTRE_Y - NO_GRAIN_ROWS),-1):
@@ -400,7 +403,7 @@ def fill_hourglass():
     st7789.display(image)
 
 def fill_row(row_y):
-    global image, pixels, no_grains, grains
+    global image, pixels, no_grains, grains_x, grains_y
     # For selected line, add grains to fill whole line
     # Start by finding left most inside hourglass
     for i in range(HOURGLASS_CENTRE_X, 0, -1):
@@ -426,41 +429,50 @@ def fill_row(row_y):
         print ("Hourgrlass graphic error")
         exit()    
 
-    row_start = len(grains) # capture the row index of the grains array for reordering
+    row_start = no_grains # capture the row index of the grains array for reordering
     # Draw each grain image and add grain x,y to grains list for future processing of movement
     for i in range(left_x, right_x + 1):
         st7789.display(grain_image, i,row_y, i, row_y)
-        no_grains = no_grains + 1
         #TODO - create numpy array to mirror pixels graphic & grains to speedup collision checks
         # Add new state to take account if falling or stationary
         pixels[i,row_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
-        grains.append([i,row_y])
+        grains_x[no_grains] = i
+        grains_y[no_grains] = row_y
+        #grains.append([i,row_y])
+        no_grains = no_grains + 1
 
-    row_end = len(grains) - 1
+    row_end = no_grains - 1
     reorder_grains(row_start, row_end)
     
 def reorder_grains(row_start, row_end):
-    global grains, sorted_grains
+    global grains_x, grains_y, sorted_grains_x, sorted_grains_y
     # This section re-orders the grains list so the grains are scanned
     # either side of the centre of the hourglass towards the edges for a 
     # more even pattern draining from the centre of the hourglass
     mid_row = row_start + int((row_end - row_start)/2)
     left = mid_row -1
     right = mid_row
+    idx = row_start
     for i in range(row_start, row_end):
         if right <= row_end:
-            sorted_grains.append(grains[right])
+            #sorted_grains.append(grains[right])
+            sorted_grains_x[idx] = grains_x[right]
+            sorted_grains_y[idx] = grains_y[right]
             right = right + 1
+            idx = idx + 1
         if left >= row_start:
-            sorted_grains.append(grains[left])
+            #sorted_grains.append(grains[left])
+            sorted_grains_x[idx] = grains_x[left]
+            sorted_grains_y[idx] = grains_y[left]
             left = left -1
+            idx = idx + 1
 
     # print(grains)
     # print(sorted_grains)
 
 
 def update_grains():
-    global sorted_grains, total_move_count, pass_count, pass_delay
+    global sorted_grains_x, sorted_grains_y, total_move_count, pass_count, pass_delay
     # Cycles through the grains to move them to the next available space either one below, lower left or lower right, 
     # or when tilting to the left or right.
     # The grain movement parameters are adjusted to account for the orientation of the hourglass
@@ -599,15 +611,15 @@ def update_grains():
 
         #print(Direction, step_x,step_y,x_left,x_right,y_left,y_right)
 
-        for i in range(0, len(grains)):
+        for i in range(0, no_grains-1):
             # Check all grains in this pass
             # Move grain down one pixel position, if possible, else down left or down right one position
             # Note that this routine copes with any orientation of the hourglass by the settings of
             # x/y step/left/right variables
 
             # Get x & y of current grain
-            grain_x = sorted_grains[i][GRAINS_X]
-            grain_y = sorted_grains[i][GRAINS_Y]
+            grain_x = sorted_grains_x[i]
+            grain_y = sorted_grains_y[i]
 
             if toggle: # Check left first
                 # Check if next pixel down is free
@@ -617,7 +629,8 @@ def update_grains():
                     # Write new grain
                     pixels[grain_x+step_x,grain_y+step_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains[i] = [grain_x+step_x, grain_y+step_y]
+                    sorted_grains_x[i] = grain_x+step_x
+                    sorted_grains_y[i] = grain_y+step_y
                     update_count = update_count + 1  # indicate moved a grain
                 # Check left lower pixel
                 elif pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] == (255,255,255): # white, ie empty
@@ -626,7 +639,8 @@ def update_grains():
                     # Write new grain
                     pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains[i] = [grain_x + step_x + x_left, grain_y + step_y + y_left]
+                    sorted_grains_x[i] = grain_x + step_x + x_left
+                    sorted_grains_y[i] = grain_y + step_y + y_left
                     update_count = update_count + 1  # indicate moved a grain
                 # Check right lower pixel
                 elif pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] == (255,255,255): # white, ie empty
@@ -635,7 +649,8 @@ def update_grains():
                     # Write new grain
                     pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains[i] = [grain_x + step_x + x_right, grain_y + step_y + y_right]
+                    sorted_grains_x[i] = grain_x + step_x + x_right
+                    sorted_grains_y[i] = grain_y + step_y + y_right
                     update_count = update_count + 1  # indicate moved a grain
             else: # Check right first
                 # Check if next pixel down is free
@@ -645,7 +660,8 @@ def update_grains():
                     # Write new grain
                     pixels[grain_x+step_x,grain_y+step_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains[i] = [grain_x+step_x, grain_y+step_y]
+                    sorted_grains_x[i] = grain_x+step_x
+                    sorted_grains_y[i] = grain_y+step_y
                     update_count = update_count + 1  # indicate moved a grain
                 # Check right lower pixel
                 elif pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] == (255,255,255): # white, ie empty
@@ -654,7 +670,8 @@ def update_grains():
                     # Write new grain
                     pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains[i] = [grain_x + step_x + x_right, grain_y + step_y + y_right]
+                    sorted_grains_x[i] = grain_x + step_x + x_right
+                    sorted_grains_y[i] = grain_y + step_y + y_right
                     update_count = update_count + 1  # indicate moved a grain
                 # Check left lower pixel
                 elif pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] == (255,255,255): # white, ie empty
@@ -663,7 +680,8 @@ def update_grains():
                     # Write new grain
                     pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains[i] = [grain_x + step_x + x_left, grain_y + step_y + y_left]
+                    sorted_grains_x[i] = grain_x + step_x + x_left
+                    sorted_grains_y[i] = grain_y + step_y + y_left
                     update_count = update_count + 1  # indicate moved a grain
             
             toggle = not toggle # Swap for next time
@@ -789,8 +807,9 @@ while True:
 
     # Draw initial screen and menu
     elif mode == MENU:
-        grains = [] # Create list definition to hold each grain x,y - will grow to meet max no of grains - grains[n][GRAINS_X] or grains[n][GRAINS_Y] etc
-        sorted_grains = [] # List of grains in a sorted order in each row - scans from centre out for each row
+        no_grains = 0 # ready to start again
+        #grains = [] # Create list definition to hold each grain x,y - will grow to meet max no of grains - grains[n][GRAINS_X] or grains[n][GRAINS_Y] etc
+        #sorted_grains = [] # List of grains in a sorted order in each row - scans from centre out for each row
         draw_menu() # Load hourglass graphic and add menu options
         analyse_hourglass_graphic() # Set up useful constants based on graphic size/position
         fill_hourglass() # Fill top of hourglass
@@ -800,7 +819,7 @@ while True:
         game_end = time.time()
         duration = game_end - game_start
         draw_completed()
-        #print(duration)
+        print(duration)
         mode = WAIT
 
 
