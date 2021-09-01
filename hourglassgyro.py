@@ -8,6 +8,9 @@
 
 import smbus			#import SMBus module of I2C
 
+# Import application modules
+import my_globals as g
+
 # Definitions for gyro
 #some MPU6050 Registers and their Address
 PWR_MGMT_1   = 0x6B
@@ -21,13 +24,6 @@ ACCEL_ZOUT_H = 0x3F
 GYRO_XOUT_H  = 0x43
 GYRO_YOUT_H  = 0x45
 GYRO_ZOUT_H  = 0x47
-
-# Gravity definitions
-Flat = 0
-Upside_Down = 1
-Rightway_up = 2
-GravityLeft = 3
-GravityRight =4
 
 # Create / init gyro object
 bus = 0
@@ -111,10 +107,10 @@ def read_gyro_xy():
     Tiltright = False
 
     # Used to establish gravity direction
-    Direction = Flat  # default - ie gravity has no effect on the grains
+    Direction = g.FLAT  # default - ie gravity has no effect on the grains
 
     if Ay > 0.7:
-        Direction = Upside_Down
+        Direction = g.UPSIDE_DOWN
         # Set tilt limits
         if Ax >0.15 and Ax <0.75:
             # Upside down bottom right 
@@ -125,7 +121,7 @@ def read_gyro_xy():
             Tiltleft = True
 
     elif Ay < -0.7:
-        Direction = Rightway_up
+        Direction = g.RIGHTWAY_UP
         # Set tilt limits
         if Ax >0.15 and Ax <0.75:
             # Upright bottom left 
@@ -136,7 +132,7 @@ def read_gyro_xy():
             Tiltright = True
 
     elif Ax > 0.7:
-        Direction = GravityLeft
+        Direction = g.GRAVITY_LEFT
         # Set tilt limits
         if Ay >0.15 and Ay <0.75:
             # Left bottom left 
@@ -147,7 +143,7 @@ def read_gyro_xy():
             Tiltright = True
 
     elif Ax < -0.7:
-        Direction = GravityRight
+        Direction = g.GRAVITY_RIGHT
         # Set tilt limits
         if Ay >0.15 and Ay <0.75:
             # Right bottom left 
