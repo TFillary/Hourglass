@@ -77,10 +77,10 @@ def draw_set():
     font2 = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 24) # Create our font, passing in the font file and font size
 
     txt_colour = (0,0,0)
-    draw.text((5, 60), "1.5 Seconds", font = font, fill = txt_colour) # A button
-    draw.text((5, 180), "6 Seconds", font = font, fill = txt_colour) # B button    
-    draw.text((156, 60), "3 Seconds", font = font, fill = txt_colour) # X button
-    draw.text((156, 180), "10 Seconds", font = font, fill = txt_colour) # Y button
+    draw.text((5, 60), "1.5 Minutes", font = font, fill = txt_colour) # A button
+    draw.text((5, 180), "6 Minutes", font = font, fill = txt_colour) # B button    
+    draw.text((156, 60), "3 Minutes", font = font, fill = txt_colour) # X button
+    draw.text((156, 180), "10 Minutes", font = font, fill = txt_colour) # Y button
 
     # draw Set screen
     g.st7789.display(set_image)
@@ -165,7 +165,7 @@ gyro_init()
 
 # Setup screen object
 SPI_SPEED_MHZ = 80
-
+# Save object in global for other modules to use
 g.st7789 = ST7789(
     rotation=90,  # Needed to display the right way up on Pirate Audio
     port=0,       # SPI port

@@ -16,7 +16,6 @@ GRAVITY_RIGHT = 4
 mode = 0
 
 st7789 = None  # Display object
-pixels = None  # Pixel graphic object
 image = None   # Image object
 
 no_grains = 0  # Keeps track of the number of grains created in the hourglass
