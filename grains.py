@@ -4,7 +4,7 @@
 # Description :	Utilities to analyse an hourgraph graphic, fill with grains
 #               and move grains
 # Author      : Trevor Fillary
-# modification: 29-08-2021
+# modification: 04-09-2021
 ########################################################################
 import time
 from PIL import Image, ImageDraw, ImageFont
@@ -27,7 +27,6 @@ DO_NOTHING = 99
 
 # Definitions for the screen
 pixels = None  # Pixel graphic object
-SCREEN_SIZE = 240 # 240x240 square
 MAX_SCREEN_INDEX = 239 # 0 to 239
 MIN_SCREEN_INDEX = 0
 
@@ -40,7 +39,7 @@ HOURGLASS_UPRIGHT = True # Assume upright initially
 
 NO_GRAIN_ROWS = 30  # Sets number of sand rows to display
 
-grains_x = [0] * 2000   
+grains_x = [0] * 2000           # NOTE: Nominally set to 2000, depends on how much sand is filled.  Used fixed site to speed up code
 grains_y = [0] * 2000
 sorted_grains_x = [0] * 2000
 sorted_grains_y = [0] * 2000
@@ -56,12 +55,13 @@ def analyse_hourglass_graphic():
     # outline is black
 
     pixels = g.image.load()  # Load image into memory for pixel access later - check for collisions etc.
+    hg_width, hg_height = g.image.size
 
     # Find top y inside hourglass
     found = False
     # Find top of outside of hourglass (assume middle of the screen for x) - black
-    for i in range(1,MAX_SCREEN_INDEX):
-        if pixels[(SCREEN_SIZE/2),i] == (0,0,0):
+    for i in range(1,hg_height):
+        if pixels[(int(hg_width/2)),i] == (0,0,0):
             # Found start of outside
             HOURGLASS_TOP_Y = i
             found = True
@@ -73,8 +73,8 @@ def analyse_hourglass_graphic():
     
     found = False
 
-    for i in range(HOURGLASS_TOP_Y, MAX_SCREEN_INDEX):
-        if pixels[(SCREEN_SIZE/2),i] != (0,0,0):
+    for i in range(HOURGLASS_TOP_Y, hg_height):
+        if pixels[(int(hg_width/2)),i] != (0,0,0):
             # Found start of inside
             HOURGLASS_TOP_Y = i
             found=True
@@ -87,8 +87,8 @@ def analyse_hourglass_graphic():
     # Find bottom y inside hourglass
     found = False
     # Find bottom of outside of hourglass (assume middle of the screen for x) - black
-    for i in range(MAX_SCREEN_INDEX,0, -1):
-        if pixels[(SCREEN_SIZE/2),i] == (0,0,0):
+    for i in range(hg_height-1,0, -1):
+        if pixels[(int(hg_width/2)),i] == (0,0,0):
             # Found start of outside
             HOURGLASS_BOTTOM_Y = i
             found = True
@@ -101,7 +101,7 @@ def analyse_hourglass_graphic():
     found = False
 
     for i in range(HOURGLASS_BOTTOM_Y, 0, -1):
-        if pixels[(SCREEN_SIZE/2),i] != (0,0,0):
+        if pixels[(int(hg_width/2)),i] != (0,0,0):
             # Found start of inside
             HOURGLASS_BOTTOM_Y = i
             found=True
@@ -116,7 +116,7 @@ def analyse_hourglass_graphic():
 
     # Find centre x inside hourglass
     # Start by finding left most inside hourglass
-    for i in range(int(SCREEN_SIZE/2), 0, -1):
+    for i in range(int(hg_width/2), 0, -1):
         if pixels[i,HOURGLASS_TOP_Y] == (0,0,0):
             # Found start of inside
             left_x = i
@@ -128,7 +128,7 @@ def analyse_hourglass_graphic():
         exit()
 
     # Next find right most inside hourglass
-    for i in range(int(SCREEN_SIZE/2), MAX_SCREEN_INDEX):
+    for i in range(int(hg_width/2), hg_width):
         if pixels[i,HOURGLASS_TOP_Y] == (0,0,0):
             # Found start of inside
             right_x = i
@@ -149,14 +149,6 @@ def fill_hourglass():
     for i in range(HOURGLASS_CENTRE_Y,(HOURGLASS_CENTRE_Y - NO_GRAIN_ROWS),-1):
         fill_row(i)
 
-    # TODO fix these bodges - just leave a single pixel hole
-    pixels[114,113] = (0,0,0) # black
-    pixels[115,113] = (0,0,0) # black
-    pixels[116,113] = (0,0,0) # black
-    pixels[118,113] = (0,0,0) # black
-    pixels[119,113] = (0,0,0) # black
-    pixels[120,113] = (0,0,0) # black
-    g.st7789.display(g.image)
 
 def fill_row(row_y):
     global pixels, grains_x, grains_y
@@ -188,15 +180,12 @@ def fill_row(row_y):
     row_start = g.no_grains # capture the row index of the grains array for reordering
     # Draw each grain image and add grain x,y to grains list for future processing of movement
     for i in range(left_x, right_x + 1):
-        g.st7789.display(grain_image, i,row_y, i, row_y)
-        #TODO - create numpy array to mirror pixels graphic & grains to speedup collision checks
-        # Add new state to take account if falling or stationary
         pixels[i,row_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
         grains_x[g.no_grains] = i
         grains_y[g.no_grains] = row_y
-        #grains.append([i,row_y])
         g.no_grains = g.no_grains + 1
 
+    g.st7789.display(g.image, g.hg_tl_x,g.hg_tl_y,g.hg_br_x,g.hg_br_y)  # update hourglass image (inc added grains row) only
     row_end = g.no_grains - 1
     reorder_grains(row_start, row_end)
     
@@ -209,7 +198,7 @@ def reorder_grains(row_start, row_end):
     left = mid_row -1
     right = mid_row
     idx = row_start
-    for i in range(row_start, row_end):
+    for i in range(row_start, row_end + 1):
         if right <= row_end:
             #sorted_grains.append(grains[right])
             sorted_grains_x[idx] = grains_x[right]
@@ -447,7 +436,7 @@ def update_grains():
         #print(pass_count, total_move_count, update_count)
 
         # Update screen to display all grains moved this pass
-        g.st7789.display(g.image)
+        g.st7789.display(g.image, g.hg_tl_x,g.hg_tl_y,g.hg_br_x,g.hg_br_y)  # update hourglass image only
 
         # Don't delay in continuous mode or if no cal has been run        
         if g.pass_delay != 0 and not g.mode == CONTINUOUS:

@@ -3,7 +3,7 @@
 # Filename    : my_globals.py
 # Description :	Globals for hourglass application
 # Author      : Trevor Fillary
-# modification: 01-09-2021
+# modification: 04-09-2021
 ########################################################################
 
 # Gravity definitions
@@ -14,6 +14,12 @@ GRAVITY_LEFT = 3
 GRAVITY_RIGHT = 4
 
 mode = 0
+
+SCREEN_SIZE = 240 # 240x240 square
+hg_tl_x = 0 # HourGlass Top Left
+hg_tl_y = 0
+hg_br_x = 0 # HourGlass bottom right
+hg_br_y = 0
 
 st7789 = None  # Display object
 image = None   # Image object
