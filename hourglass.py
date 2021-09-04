@@ -59,7 +59,7 @@ def draw_menu():
     
     # Now to add some text for the buttons.....
     font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 16) # Create our font, passing in the font file and font size
-    font2 = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 24) # Create our font, passing in the font file and font size
+    #font2 = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 24) # Create our font, passing in the font file and font size
 
     txt_colour = (0,0,0)
     draw.text((5, 60), "Time", font = font, fill = txt_colour) # A button
@@ -89,7 +89,7 @@ def draw_set():
     
     # Now to add some text for the buttons.....
     font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 16) # Create our font, passing in the font file and font size
-    font2 = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 24) # Create our font, passing in the font file and font size
+    #font2 = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 24) # Create our font, passing in the font file and font size
 
     txt_colour = (0,0,0)
     draw.text((5, 60), "1.5 Minutes", font = font, fill = txt_colour) # A button

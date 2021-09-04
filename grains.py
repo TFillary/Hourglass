@@ -37,7 +37,7 @@ HOURGLASS_CENTRE_Y = 0 # Inside hourglass
 HOURGLASS_CENTRE_X = 0 # Inside hourlgass
 HOURGLASS_UPRIGHT = True # Assume upright initially
 
-NO_GRAIN_ROWS = 30  # Sets number of sand rows to display
+NO_GRAIN_ROWS = 32  # Sets number of sand rows to display
 
 grains_x = [0] * 2000           # NOTE: Nominally set to 2000, depends on how much sand is filled.  Used fixed site to speed up code
 grains_y = [0] * 2000
