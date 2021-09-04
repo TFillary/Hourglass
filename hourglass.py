@@ -6,7 +6,7 @@
 #               Inspiration from https://hackaday.io/project/165620-digital-hourglass, but developed from scratch
 #               Can take any 'typical' hourglass graphic and work out where to fill it (amount of fill can be changed)
 # Author      : Trevor Fillary
-# modification: 20-08-2021
+# modification: 04-09-2021
 ########################################################################
 
 import time
@@ -51,8 +51,11 @@ cal_time = 0
 
 def draw_menu():
     global draw
-    g.image = Image.open("hourglass.bmp") # Load initial picture
-    draw = ImageDraw.Draw(g.image) # Setup so can draw on the screen for menu etc.
+    g.image = Image.open("hourglassOnly.bmp") # Load initial picture
+    hg_width, hg_height = g.image.size
+
+    menuimage = Image.new('RGB', (240,240), color = (255,255,255)) # Create a white screen
+    draw = ImageDraw.Draw(menuimage) # Setup so can draw on the screen for menu etc.
     
     # Now to add some text for the buttons.....
     font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSans.ttf', 16) # Create our font, passing in the font file and font size
@@ -61,11 +64,23 @@ def draw_menu():
     txt_colour = (0,0,0)
     draw.text((5, 60), "Time", font = font, fill = txt_colour) # A button
     draw.text((5, 180), "Set", font = font, fill = txt_colour) # B button    
-    draw.text((156, 60), "Continuous", font = font, fill = txt_colour) # X button
+    draw.text((157, 60), "Continuous", font = font, fill = txt_colour) # X button
     draw.text((170, 180), "Cal", font = font, fill = txt_colour) # Y button
 
-    # draw menu
-    g.st7789.display(g.image)
+    # draw menu items
+    g.st7789.display(menuimage)
+
+    # Calculate position of hourglass graphic (centre of the screen)
+    mid_screen = int(g.SCREEN_SIZE/2)
+    mid_hourglass_x = int(hg_width/2)
+    mid_hourglass_y = int(hg_height/2)
+    g.hg_tl_x = mid_screen - mid_hourglass_x
+    g.hg_tl_y = mid_screen - mid_hourglass_y
+    g.hg_br_x = mid_screen + mid_hourglass_x
+    g.hg_br_y = mid_screen + mid_hourglass_y
+
+    g.st7789.display(g.image, g.hg_tl_x,g.hg_tl_y,g.hg_br_x,g.hg_br_y)  # add hourglass image
+
 
 def draw_set():
     # Draw set image screen
@@ -193,13 +208,11 @@ while True:
         if g.pass_delay != 0:  # Only update if has been through a calibration
             g.pass_delay = (set_time*60/pass_count) - (cal_time/pass_count)
         total_move_count, pass_count = update_grains()
-        #no_grains = 0 # ready to start again
         g.mode = FINISHED
 
     # Run continuously to allow playing with hourglass
     elif g.mode == CONTINUOUS:
         total_move_count, pass_count = update_grains()
-        #no_grains = 0 # ready to start again
         g.mode = MENU
 
     # Display the timer set options
@@ -227,7 +240,7 @@ while True:
         game_end = time.time()
         duration = game_end - game_start
         draw_completed()
-        print(duration)
+        #print(duration)
         g.mode = WAIT
 
 
