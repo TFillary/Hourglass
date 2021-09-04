@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 #############################################################################
-# Filename    : grains.py
-# Description :	Utilities to analyse an hourgraph graphic, fill with grains
+# Filename    : grains.pyx
+# Description :	Cython Version - Utilities to analyse an hourgraph graphic, fill with grains
 #               and move grains
 # Author      : Trevor Fillary
 # modification: 29-08-2021
 ########################################################################
+import cython
+
 import time
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from ST7789 import ST7789
 
@@ -27,6 +30,8 @@ DO_NOTHING = 99
 
 # Definitions for the screen
 pixels = None  # Pixel graphic object
+numpy_pixels = None # numpy object to mirror pixels
+
 SCREEN_SIZE = 240 # 240x240 square
 MAX_SCREEN_INDEX = 239 # 0 to 239
 MIN_SCREEN_INDEX = 0
@@ -48,14 +53,32 @@ sorted_grains_y = [0] * 2000
 grain_image = Image.new("RGB", (1, 1), (0, 255, 0)) # green, single image
 delete_grain_image = Image.new("RGB", (1, 1), (255, 255, 255)) # white, background colour, single image
 
+# numpy colour assignments
+nump_black = 0
+nump_white = 1
+nump_green = 2
+
 
 def analyse_hourglass_graphic():
-    global pixels, HOURGLASS_TOP_Y, HOURGLASS_BOTTOM_Y, HOURGLASS_CENTRE_X, HOURGLASS_CENTRE_Y
+    global pixels, numpy_pixels, HOURGLASS_TOP_Y, HOURGLASS_BOTTOM_Y, HOURGLASS_CENTRE_X, HOURGLASS_CENTRE_Y
     # Routine to analyse the hourglass graphic that may change in size or position if it is updated
     # Assumes the hourglass is broadly central within the screen, background is white and hourglass
     # outline is black
 
     pixels = g.image.load()  # Load image into memory for pixel access later - check for collisions etc.
+    numpy_pixels = np.zeros((MAX_SCREEN_INDEX,MAX_SCREEN_INDEX), dtype=int) # Set up numpy array to mirror pixels array - faster for checking
+
+    # I now need to create an integer array with the colour information:
+    # 0 = black, 1 = white and 2 = green
+    for i in range(0,MAX_SCREEN_INDEX):
+        for j in range(0,MAX_SCREEN_INDEX):
+            if pixels[i,j] == (0,0,0):
+                numpy_pixels[j,i] = nump_black
+            elif pixels[i,j] == (255,255,255):
+                numpy_pixels[j,i] = nump_white
+            elif pixels[i,j] == (0,255,0):
+                numpy_pixels[j,i] = nump_green
+
 
     # Find top y inside hourglass
     found = False
@@ -142,6 +165,7 @@ def analyse_hourglass_graphic():
     # Find centre x inside hourglass
     HOURGLASS_CENTRE_X = int(left_x + ((right_x - left_x)/2))
 
+
 def fill_hourglass():
     global pixels
     # Routine to fill the top half of the hourglass (up to the max number of rows)
@@ -151,15 +175,21 @@ def fill_hourglass():
 
     # TODO fix these bodges - just leave a single pixel hole
     pixels[114,113] = (0,0,0) # black
+    numpy_pixels[113,114] = nump_black # black
     pixels[115,113] = (0,0,0) # black
+    numpy_pixels[113,115] = nump_black # black
     pixels[116,113] = (0,0,0) # black
+    numpy_pixels[113,116] = nump_black # black
     pixels[118,113] = (0,0,0) # black
+    numpy_pixels[113,118] = nump_black # black
     pixels[119,113] = (0,0,0) # black
+    numpy_pixels[113,119] = nump_black # black
     pixels[120,113] = (0,0,0) # black
+    numpy_pixels[113,120] = nump_black # black
     g.st7789.display(g.image)
 
 def fill_row(row_y):
-    global pixels, grains_x, grains_y
+    global pixels, numpy_pixels, grains_x, grains_y
     # For selected line, add grains to fill whole line
     # Start by finding left most inside hourglass
     for i in range(HOURGLASS_CENTRE_X, 0, -1):
@@ -192,6 +222,7 @@ def fill_row(row_y):
         #TODO - create numpy array to mirror pixels graphic & grains to speedup collision checks
         # Add new state to take account if falling or stationary
         pixels[i,row_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+        numpy_pixels[row_y,i] = nump_green # write a green pixels to the local graphic for future collision checks.
         grains_x[g.no_grains] = i
         grains_y[g.no_grains] = row_y
         #grains.append([i,row_y])
@@ -228,7 +259,7 @@ def reorder_grains(row_start, row_end):
 
 
 def update_grains():
-    global pixels, sorted_grains_x, sorted_grains_y
+    global pixels, numpy_pixels, sorted_grains_x, sorted_grains_y
     # Cycles through the grains to move them to the next available space either one below, lower left or lower right, 
     # or when tilting to the left or right.
     # The grain movement parameters are adjusted to account for the orientation of the hourglass
@@ -236,10 +267,22 @@ def update_grains():
     # Algorithm is: No tilt- try moving grain straight down first then attempt to move down at 45 deg (left or right)
     #               A tilt - try moving grain down at 45 deg first then attempt to move just left/right
     
-    update_count = 1 # set to 1 to get started on main loop
+    cdef int step_x = 0
+    cdef int step_y = 0
+    cdef int x_left = 0
+    cdef int x_right = 0
+    cdef int y_left = 0
+    cdef int y_right = 0
+
+    cdef int grain_x = 0
+    cdef int grain_y = 0
+
+    cdef int i
+    
+    cdef int update_count = 1 # set to 1 to get started on main loop
     # init stat variables - only valid if run during a standard timing run
-    total_move_count = 0
-    pass_count = 0
+    cdef int total_move_count = 0
+    cdef int pass_count = 0   
 
     # Main loop to loop until there is no more grain movement (when being used as a timer) or to run continuously
     while (g.mode == CONTINUOUS) or not(update_count == 0):
@@ -378,63 +421,75 @@ def update_grains():
             grain_y = sorted_grains_y[i]
 
             if toggle: # Check left first
-                # Check if next pixel down is free
-                if pixels[grain_x+step_x,grain_y+step_y] == (255,255,255): # white, ie empty
+                # Check if next pixel down is free NOTE - numpy is [row,col], ie [y,x]
+                if numpy_pixels[grain_y+step_y,grain_x+step_x] == nump_white: # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y,grain_x] = nump_white # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
                     pixels[grain_x+step_x,grain_y+step_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y+step_y,grain_x+step_x] = nump_green # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
                     sorted_grains_x[i] = grain_x+step_x
                     sorted_grains_y[i] = grain_y+step_y
                     update_count = update_count + 1  # indicate moved a grain
                 # Check left lower pixel
-                elif pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] == (255,255,255): # white, ie empty
+                elif numpy_pixels[grain_y + step_y + y_left,grain_x + step_x + x_left] == nump_white: # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y,grain_x] = nump_white # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
                     pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y + step_y + y_left,grain_x + step_x + x_left] = nump_green # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
                     sorted_grains_x[i] = grain_x + step_x + x_left
                     sorted_grains_y[i] = grain_y + step_y + y_left
                     update_count = update_count + 1  # indicate moved a grain
                 # Check right lower pixel
-                elif pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] == (255,255,255): # white, ie empty
+                elif numpy_pixels[grain_y + step_y + y_right,grain_x + step_x + x_right] == nump_white: # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y,grain_x] = nump_white # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
                     pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y + step_y + y_right,grain_x + step_x + x_right] = nump_green # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
                     sorted_grains_x[i] = grain_x + step_x + x_right
                     sorted_grains_y[i] = grain_y + step_y + y_right
                     update_count = update_count + 1  # indicate moved a grain
             else: # Check right 
                 # Check if next pixel down is free
-                if pixels[grain_x+step_x,grain_y+step_y] == (255,255,255): # white, ie empty
+                if numpy_pixels[grain_y+step_y,grain_x+step_x] == nump_white: # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y,grain_x] = nump_white # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
                     pixels[grain_x+step_x,grain_y+step_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y+step_y,grain_x+step_x] = nump_green # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
                     sorted_grains_x[i] = grain_x+step_x
                     sorted_grains_y[i] = grain_y+step_y
                     update_count = update_count + 1  # indicate moved a grain
                 # Check right lower pixel
-                elif pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] == (255,255,255): # white, ie empty
+                elif numpy_pixels[grain_y + step_y + y_right,grain_x + step_x + x_right] == nump_white: # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y,grain_x] = nump_white # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
                     pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y + step_y + y_right,grain_x + step_x + x_right] = nump_green # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
                     sorted_grains_x[i] = grain_x + step_x + x_right
                     sorted_grains_y[i] = grain_y + step_y + y_right
                     update_count = update_count + 1  # indicate moved a grain
                 # Check left lower pixel
-                elif pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] == (255,255,255): # white, ie empty
+                elif numpy_pixels[grain_y + step_y + y_left,grain_x + step_x + x_left] == nump_white: # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y,grain_x] = nump_white # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
                     pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    numpy_pixels[grain_y + step_y + y_left,grain_x + step_x + x_left] = nump_green # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
                     sorted_grains_x[i] = grain_x + step_x + x_left
                     sorted_grains_y[i] = grain_y + step_y + y_left

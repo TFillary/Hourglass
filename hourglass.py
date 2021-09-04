@@ -36,8 +36,8 @@ CONTINUOUS = 4
 SET_MENU = 5
 SET = 6
 CAL = 7
-WAIT = 8    # TODO: do we need WAIT and NULL??
-NULL = 99
+WAIT = 8    # TODO: do we need WAIT and DO_NOTHING??
+DO_NOTHING = 99
 
 # Stat variables
 total_move_count = 0
@@ -221,7 +221,7 @@ while True:
         draw_menu() # Load hourglass graphic and add menu options
         analyse_hourglass_graphic() # Set up useful constants based on graphic size/position
         fill_hourglass() # Fill top of hourglass
-        g.mode = NULL  # Dont do anything until a button is pressed.
+        g.mode = DO_NOTHING  # Dont do anything until a button is pressed.
 
     if g.mode == FINISHED:
         game_end = time.time()
