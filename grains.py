@@ -229,6 +229,7 @@ def update_grains():
     # init stat variables - only valid if run during a standard timing run
     total_move_count = 0
     pass_count = 0
+    display_update = 0 # Used to limit screen updates to every other pass
 
     # Main loop to loop until there is no more grain movement (when being used as a timer) or to run continuously
     while (g.mode == CONTINUOUS) or not(update_count == 0):
@@ -435,8 +436,11 @@ def update_grains():
         total_move_count = total_move_count + update_count # Add count for the current pass
         #print(pass_count, total_move_count, update_count)
 
-        # Update screen to display all grains moved this pass
-        g.st7789.display(g.image, g.hg_tl_x,g.hg_tl_y,g.hg_br_x,g.hg_br_y)  # update hourglass image only
+        if display_update == 20:  # Only update every other pass to improve performance
+            # Update screen to display all grains moved this pass
+            g.st7789.display(g.image, g.hg_tl_x,g.hg_tl_y,g.hg_br_x,g.hg_br_y)  # update hourglass image only
+            display_update = 0
+        display_update = display_update + 1
 
         # Don't delay in continuous mode or if no cal has been run        
         if g.pass_delay != 0 and not g.mode == CONTINUOUS:
