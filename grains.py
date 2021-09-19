@@ -242,113 +242,113 @@ def update_grains():
         
         if Direction == g.RIGHTWAY_UP or g.mode == TIMING:  # Force right way up if in timing mode
             if Tiltleft:
-                step_x = -1 # step x & y are to select next step down, ie 45 deg for a tilt
-                step_y = 1 # +ve down
-                x_left = 0 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
+                down_x = -1 # down x & y are to select next step down, ie 45 deg for a tilt
+                down_y = 1 # +ve down
+                x_left = -1 # x/y left and right are used if 'down x/y' cant find a free spot.  
+                y_left = 0 # effectively just go left 
                 x_right = 0
-                y_left = -1 # effectively just go left 
                 y_right = 0
 
             elif Tiltright:
-                step_x = 1 # step x & y are to select next step down, ie 45 deg for a tilt
-                step_y = 1 # +ve down
-                x_left = 0 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
-                x_right = 0 
+                down_x = 1 # down x & y are to select next step down, ie 45 deg for a tilt
+                down_y = 1 # +ve down
+                x_left = 0 # x/y left and right are used if 'down x/y' cant find a free spot. 
                 y_left = 0 
-                y_right = -1 # effectively just go right
+                x_right = 1 
+                y_right = 0 # effectively just go right
 
             else:
                 # No tilt
-                step_x = 0 # step x & y are to select next step down, ie straight down
-                step_y = 1 # +ve down
-                x_left = -1 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
+                down_x = 0 # down x & y are to select next step down, ie straight down
+                down_y = 1 # +ve down
+                x_left = -1 # x/y left and right are used if 'down x/y' cant find a free spot.  
+                y_left = 1 # not used when upright
                 x_right = 1 # Change to 45 deg
-                y_left = 0 # not used when upright
-                y_right = 0
+                y_right = 1
         
         elif Direction == g.UPSIDE_DOWN:
             if Tiltleft:
-                step_x = 1 # step x & y are to select next step down, ie 45 deg for a tilt
-                step_y = -1 # -ve down
-                x_left = 0 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
+                down_x = 1 # step x & y are to select next step down, ie 45 deg for a tilt
+                down_y = -1 # -ve down
+                x_left = 1 # x/y left and right are used if 'down x/y' cant find a free spot.  
+                y_left = 0 # effectively just go left
                 x_right = 0
-                y_left = 1 # effectively just go left 
                 y_right = 0
 
             elif Tiltright:
-                step_x = -1 # step x & y are to select next step down, ie 45 deg for a tilt
-                step_y = -1 # +ve down
-                x_left = 0 # x/y left and right are used if 'step x/y' cant find a free spot.  Values are added to step x/y!
-                x_right = 0 
-                y_left = 0 
-                y_right = 1 # effectively just go right
+                down_x = -1 # step x & y are to select next step down, ie 45 deg for a tilt
+                down_y = -1 # +ve down
+                x_left = 0 # x/y left and right are used if 'down x/y' cant find a free spot.
+                y_left = 0  
+                x_right = -1 
+                y_right = 0 # effectively just go right
 
             else:
                 # No tilt
-                step_x = 0 # step x & y are to select next step down, ie straight down
-                step_y = -1 # -ve down
+                down_x = 0 # step x & y are to select next step down, ie straight down
+                down_y = -1 # -ve down
                 x_left = 1
+                y_left = -1 # not used when upside down
                 x_right = -1
-                y_left = 0 # not used when upside down
-                y_left = 0
+                y_right = -1
 
         elif Direction == g.GRAVITY_LEFT:
             # left side down so swap axis, ie x axis now controls 'gravity' direction and y across the hourglass
             if Tiltleft:
-                step_x = -1 
-                step_y = -1 
-                x_left = 1 
-                x_right = 0
-                y_left = 0 
-                y_right = 0
+                down_x = -1 
+                down_y = -1 
+                x_left = 0 
+                y_left = -1 
+                x_right = -1
+                y_right = -1
 
             elif Tiltright:
-                step_x = -1 
-                step_y = 1 
-                x_left = 0 
-                x_right = 1 
-                y_left = 0 
-                y_right = 0
+                down_x = -1 
+                down_y = 1 
+                x_left = -1 
+                y_left = 1 
+                x_right = 0 
+                y_right = 1
 
             else:
                 # No tilt
-                step_x = -1 
-                step_y = 0 
-                x_left = 0 
-                x_right = 0
+                down_x = -1 
+                down_y = 0 
+                x_left = -1 
                 y_left = -1
+                x_right = -1
                 y_right = 1
 
         elif Direction == g.GRAVITY_RIGHT:
             # right side down so swap axis, ie x axis now controls 'gravity' direction and y across the hourglass
             if Tiltleft:
-                step_x = 1 
-                step_y = 1 
-                x_left = -1 
-                x_right = 0
-                y_left = 0 
-                y_right = 0
+                down_x = 1 
+                down_y = 1 
+                x_left = 0 
+                y_left = 1 
+                x_right = 1
+                y_right = 1
 
             elif Tiltright:
-                step_x = 1 
-                step_y = -1 
-                x_left = 0 
-                x_right = -1 
-                y_left = 0 
-                y_right = 0
+                down_x = 1 
+                down_y = -1 
+                x_left = 1 
+                y_left = -1
+                x_right = 0 
+                y_right = -1
 
             else:
                 # No tilt
-                step_x = 1 
-                step_y = 0 
+                down_x = 1 
+                down_y = 0 
                 x_left = 0 
-                x_right = 0
                 y_left = 1
+                x_right = 0
                 y_right = -1
 
         elif Direction == g.FLAT: # Nothing to do....
-            step_x = 0
-            step_y = 0
+            down_x = 0
+            down_y = 0
             x_left = 0 
             x_right = 0
             y_left = 0
@@ -369,65 +369,65 @@ def update_grains():
 
             if toggle: # Check left first
                 # Check if next pixel down is free
-                if pixels[grain_x+step_x,grain_y+step_y] == (255,255,255): # white, ie empty
+                if pixels[grain_x+down_x,grain_y+down_y] == (255,255,255): # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
-                    pixels[grain_x+step_x,grain_y+step_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    pixels[grain_x+down_x,grain_y+down_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains_x[i] = grain_x+step_x
-                    sorted_grains_y[i] = grain_y+step_y
+                    sorted_grains_x[i] = grain_x+down_x
+                    sorted_grains_y[i] = grain_y+down_y
                     update_count = update_count + 1  # indicate moved a grain
                 # Check left lower pixel
-                elif pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] == (255,255,255): # white, ie empty
+                elif pixels[grain_x + x_left, grain_y + y_left] == (255,255,255): # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
-                    pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    pixels[grain_x + x_left, grain_y + y_left] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains_x[i] = grain_x + step_x + x_left
-                    sorted_grains_y[i] = grain_y + step_y + y_left
+                    sorted_grains_x[i] = grain_x + x_left
+                    sorted_grains_y[i] = grain_y + y_left
                     update_count = update_count + 1  # indicate moved a grain
                 # Check right lower pixel
-                elif pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] == (255,255,255): # white, ie empty
+                elif pixels[grain_x + x_right, grain_y + y_right] == (255,255,255): # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
-                    pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    pixels[grain_x + x_right, grain_y + y_right] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains_x[i] = grain_x + step_x + x_right
-                    sorted_grains_y[i] = grain_y + step_y + y_right
+                    sorted_grains_x[i] = grain_x + x_right
+                    sorted_grains_y[i] = grain_y + y_right
                     update_count = update_count + 1  # indicate moved a grain
             else: # Check right 
                 # Check if next pixel down is free
-                if pixels[grain_x+step_x,grain_y+step_y] == (255,255,255): # white, ie empty
+                if pixels[grain_x+down_x,grain_y+down_y] == (255,255,255): # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
-                    pixels[grain_x+step_x,grain_y+step_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    pixels[grain_x+down_x,grain_y+down_y] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains_x[i] = grain_x+step_x
-                    sorted_grains_y[i] = grain_y+step_y
+                    sorted_grains_x[i] = grain_x+down_x
+                    sorted_grains_y[i] = grain_y+down_y
                     update_count = update_count + 1  # indicate moved a grain
                 # Check right lower pixel
-                elif pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] == (255,255,255): # white, ie empty
+                elif pixels[grain_x + x_right, grain_y + y_right] == (255,255,255): # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
-                    pixels[grain_x + step_x + x_right, grain_y + step_y + y_right] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    pixels[grain_x + x_right, grain_y + y_right] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains_x[i] = grain_x + step_x + x_right
-                    sorted_grains_y[i] = grain_y + step_y + y_right
+                    sorted_grains_x[i] = grain_x + x_right
+                    sorted_grains_y[i] = grain_y + y_right
                     update_count = update_count + 1  # indicate moved a grain
                 # Check left lower pixel
-                elif pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] == (255,255,255): # white, ie empty
+                elif pixels[grain_x + x_left, grain_y + y_left] == (255,255,255): # white, ie empty
                     # Delete original grain
                     pixels[grain_x,grain_y] = (255,255,255) # write a white pixels to the local graphic for future collision checks.
                     # Write new grain
-                    pixels[grain_x + step_x + x_left, grain_y + step_y + y_left] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
+                    pixels[grain_x + x_left, grain_y + y_left] = (0,255,0) # write a green pixels to the local graphic for future collision checks.
                     # Update new grain x,y in grains list
-                    sorted_grains_x[i] = grain_x + step_x + x_left
-                    sorted_grains_y[i] = grain_y + step_y + y_left
+                    sorted_grains_x[i] = grain_x + x_left
+                    sorted_grains_y[i] = grain_y + y_left
                     update_count = update_count + 1  # indicate moved a grain
             
             toggle = not toggle # Swap for next time
@@ -436,7 +436,7 @@ def update_grains():
         total_move_count = total_move_count + update_count # Add count for the current pass
         #print(pass_count, total_move_count, update_count)
 
-        if display_update == 20:  # Only update every other pass to improve performance
+        if display_update == 10:  # Only update every other pass to improve performance
             # Update screen to display all grains moved this pass
             g.st7789.display(g.image, g.hg_tl_x,g.hg_tl_y,g.hg_br_x,g.hg_br_y)  # update hourglass image only
             display_update = 0
