@@ -219,11 +219,11 @@ def reorder_grains(row_start, row_end):
 def update_grains():
     global pixels, sorted_grains_x, sorted_grains_y
     # Cycles through the grains to move them to the next available space either one below, lower left or lower right, 
-    # or when tilting to the left or right.
+    # or when tilting to the upper left or upper right.
     # The grain movement parameters are adjusted to account for the orientation of the hourglass
     # Function runs until there are no more grains to move or runs continuously
     # Algorithm is: No tilt- try moving grain straight down first then attempt to move down at 45 deg (left or right)
-    #               A tilt - try moving grain down at 45 deg first then attempt to move just left/right
+    #               A tilt - try moving grain down at 45 deg first then attempt to move up 45 deg left/right
     
     update_count = 1 # set to 1 to get started on main loop
     # init stat variables - only valid if run during a standard timing run
@@ -245,7 +245,7 @@ def update_grains():
                 down_x = -1 # down x & y are to select next step down, ie 45 deg for a tilt
                 down_y = 1 # +ve down
                 x_left = -1 # x/y left and right are used if 'down x/y' cant find a free spot.  
-                y_left = 0 # effectively just go left 
+                y_left = -1 # effectively up left 45 deg 
                 x_right = 0
                 y_right = 0
 
@@ -255,15 +255,15 @@ def update_grains():
                 x_left = 0 # x/y left and right are used if 'down x/y' cant find a free spot. 
                 y_left = 0 
                 x_right = 1 
-                y_right = 0 # effectively just go right
+                y_right = -1 # effectively up right 45 deg
 
             else:
                 # No tilt
                 down_x = 0 # down x & y are to select next step down, ie straight down
                 down_y = 1 # +ve down
                 x_left = -1 # x/y left and right are used if 'down x/y' cant find a free spot.  
-                y_left = 1 # not used when upright
-                x_right = 1 # Change to 45 deg
+                y_left = 1 # Change to down 45 deg
+                x_right = 1 # Change to down 45 deg
                 y_right = 1
         
         elif Direction == g.UPSIDE_DOWN:
@@ -271,7 +271,7 @@ def update_grains():
                 down_x = 1 # step x & y are to select next step down, ie 45 deg for a tilt
                 down_y = -1 # -ve down
                 x_left = 1 # x/y left and right are used if 'down x/y' cant find a free spot.  
-                y_left = 0 # effectively just go left
+                y_left = 1 # effectively up left 45 deg
                 x_right = 0
                 y_right = 0
 
@@ -281,14 +281,14 @@ def update_grains():
                 x_left = 0 # x/y left and right are used if 'down x/y' cant find a free spot.
                 y_left = 0  
                 x_right = -1 
-                y_right = 0 # effectively just go right
+                y_right = 1 # effectively up right 45 deg
 
             else:
                 # No tilt
                 down_x = 0 # step x & y are to select next step down, ie straight down
                 down_y = -1 # -ve down
-                x_left = 1
-                y_left = -1 # not used when upside down
+                x_left = 1 # change to down 45 deg
+                y_left = -1 # change to down 45 deg
                 x_right = -1
                 y_right = -1
 
@@ -297,7 +297,7 @@ def update_grains():
             if Tiltleft:
                 down_x = -1 
                 down_y = -1 
-                x_left = 0 
+                x_left = 1 
                 y_left = -1 
                 x_right = -1
                 y_right = -1
@@ -307,7 +307,7 @@ def update_grains():
                 down_y = 1 
                 x_left = -1 
                 y_left = 1 
-                x_right = 0 
+                x_right = 1 
                 y_right = 1
 
             else:
@@ -324,7 +324,7 @@ def update_grains():
             if Tiltleft:
                 down_x = 1 
                 down_y = 1 
-                x_left = 0 
+                x_left = -1 
                 y_left = 1 
                 x_right = 1
                 y_right = 1
@@ -334,7 +334,7 @@ def update_grains():
                 down_y = -1 
                 x_left = 1 
                 y_left = -1
-                x_right = 0 
+                x_right = -1 
                 y_right = -1
 
             else:
