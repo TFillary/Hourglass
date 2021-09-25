@@ -4,7 +4,7 @@
 # Description :	Utilities to analyse an hourgraph graphic, fill with grains
 #               and move grains
 # Author      : Trevor Fillary
-# modification: 04-09-2021
+# modification: 25-09-2021
 ########################################################################
 import time
 from PIL import Image, ImageDraw, ImageFont
@@ -39,7 +39,8 @@ HOURGLASS_UPRIGHT = True # Assume upright initially
 
 NO_GRAIN_ROWS = 32  # Sets number of sand rows to display
 
-grains_x = [0] * 2000           # NOTE: Nominally set to 2000, depends on how much sand is filled.  Used fixed site to speed up code
+# Note 'simplified' fixed arrays are used to speed up processing, ie Python List processing is slow....
+grains_x = [0] * 2000           # NOTE: Nominally set to 2000, depends on how much sand is filled.  Used fixed size to speed up code
 grains_y = [0] * 2000
 sorted_grains_x = [0] * 2000
 sorted_grains_y = [0] * 2000
@@ -198,7 +199,7 @@ def reorder_grains(row_start, row_end):
     left = mid_row -1
     right = mid_row
     idx = row_start
-    for i in range(row_start, row_end + 1):
+    for _ in range(row_start, row_end + 1):
         if right <= row_end:
             #sorted_grains.append(grains[right])
             sorted_grains_x[idx] = grains_x[right]
@@ -218,12 +219,15 @@ def reorder_grains(row_start, row_end):
 
 def update_grains():
     global pixels, sorted_grains_x, sorted_grains_y
-    # Cycles through the grains to move them to the next available space either one below, lower left or lower right, 
-    # or when tilting to the upper left or upper right.
-    # The grain movement parameters are adjusted to account for the orientation of the hourglass
+    # Cycles through the grains to move them to the next available space either one below, lower left or lower right.
+    # These checks are performed at all compass directionS - N/S/E/W/NE/NW/SE/SW
+    # The grain movement parameters are adjusted to account for the orientation of the hourglass to minimise 
+    # the later on processing.
+    #
     # Function runs until there are no more grains to move or runs continuously
-    # Algorithm is: No tilt- try moving grain straight down first then attempt to move down at 45 deg (left or right)
-    #               A tilt - try moving grain down at 45 deg first then attempt to move up 45 deg left/right
+    # Algorithm is: try moving grain straight down first, if fails then attempt to move down at 45 deg (left and right checks).
+    #
+    # To speed up processing only update the desplay every 'n' number of passes
     
     update_count = 1 # set to 1 to get started on main loop
     # init stat variables - only valid if run during a standard timing run
@@ -238,113 +242,75 @@ def update_grains():
         toggle = True # Used to toggle checking left/right first
         
         # Get gyro info 
-        Direction, Tiltleft, Tiltright = read_gyro_xy() 
-        
-        if Direction == g.RIGHTWAY_UP or g.mode == TIMING:  # Force right way up if in timing mode
-            if Tiltleft:
-                down_x = -1 # down x & y are to select next step down, ie 45 deg for a tilt
-                down_y = 1 # +ve down
-                x_left = -1 # x/y left and right are used if 'down x/y' cant find a free spot.  
-                y_left = -1 # effectively up left 45 deg 
-                x_right = 0
-                y_right = 0
+        Direction = read_gyro_xy() 
+    
+    # Down x/y are used for the inital test to see if can move directly below
+    # x/y left & right are used to check whether the can move 45 degrees left or right
+    # All number pairs are added to the 'grain' position for any testing
 
-            elif Tiltright:
-                down_x = 1 # down x & y are to select next step down, ie 45 deg for a tilt
-                down_y = 1 # +ve down
-                x_left = 0 # x/y left and right are used if 'down x/y' cant find a free spot. 
-                y_left = 0 
-                x_right = 1 
-                y_right = -1 # effectively up right 45 deg
+        if Direction == g.S or g.mode == TIMING:  # Force right way up if in timing mode
+            down_x = 0 # down x & y are to select next step down, ie straight down
+            down_y = 1 # +ve down
+            x_left = -1 # x/y left and right are used if 'down x/y' cant find a free spot.  
+            y_left = 1 # Change to down 45 deg
+            x_right = 1 # Change to down 45 deg
+            y_right = 1
 
-            else:
-                # No tilt
-                down_x = 0 # down x & y are to select next step down, ie straight down
-                down_y = 1 # +ve down
-                x_left = -1 # x/y left and right are used if 'down x/y' cant find a free spot.  
-                y_left = 1 # Change to down 45 deg
-                x_right = 1 # Change to down 45 deg
-                y_right = 1
-        
-        elif Direction == g.UPSIDE_DOWN:
-            if Tiltleft:
-                down_x = 1 # step x & y are to select next step down, ie 45 deg for a tilt
-                down_y = -1 # -ve down
-                x_left = 1 # x/y left and right are used if 'down x/y' cant find a free spot.  
-                y_left = 1 # effectively up left 45 deg
-                x_right = 0
-                y_right = 0
+        elif Direction == g.SW:
+            down_x = -1 # down x & y are to select next step down, ie 45 deg for a tilt
+            down_y = 1 # +ve down
+            x_left = -2 # x/y left and right are used if 'down x/y' cant find a free spot.  
+            y_left = 0 # effectively up left 45 deg 
+            x_right = 0
+            y_right = 2
 
-            elif Tiltright:
-                down_x = -1 # step x & y are to select next step down, ie 45 deg for a tilt
-                down_y = -1 # +ve down
-                x_left = 0 # x/y left and right are used if 'down x/y' cant find a free spot.
-                y_left = 0  
-                x_right = -1 
-                y_right = 1 # effectively up right 45 deg
+        elif Direction == g.SE:
+            down_x = 1 # down x & y are to select next step down, ie 45 deg for a tilt
+            down_y = 1 # +ve down
+            x_left = 0 # x/y left and right are used if 'down x/y' cant find a free spot. 
+            y_left = 2 
+            x_right = 2 
+            y_right = 0 # effectively up right 45 deg
 
-            else:
-                # No tilt
-                down_x = 0 # step x & y are to select next step down, ie straight down
-                down_y = -1 # -ve down
-                x_left = 1 # change to down 45 deg
-                y_left = -1 # change to down 45 deg
-                x_right = -1
-                y_right = -1
+        elif Direction == g.N: # Upside down
+            down_x = 0 # step x & y are to select next step down, ie straight down
+            down_y = -1 # -ve down
+            x_left = 1 # change to down 45 deg
+            y_left = -1 # change to down 45 deg
+            x_right = -1
+            y_right = -1
 
-        elif Direction == g.GRAVITY_LEFT:
-            # left side down so swap axis, ie x axis now controls 'gravity' direction and y across the hourglass
-            if Tiltleft:
-                down_x = -1 
-                down_y = -1 
-                x_left = 1 
-                y_left = -1 
-                x_right = -1
-                y_right = -1
+        elif Direction == g.NE:
+            down_x = 1 # step x & y are to select next step down, ie 45 deg for a tilt
+            down_y = -1 # -ve down
+            x_left = 2 # x/y left and right are used if 'down x/y' cant find a free spot.  
+            y_left = 0 # effectively up left 45 deg
+            x_right = 0
+            y_right = -2
 
-            elif Tiltright:
-                down_x = -1 
-                down_y = 1 
-                x_left = -1 
-                y_left = 1 
-                x_right = 1 
-                y_right = 1
+        elif Direction == g.NW:
+            down_x = -1 # step x & y are to select next step down, ie 45 deg for a tilt
+            down_y = -1 # +ve down
+            x_left = 0 # x/y left and right are used if 'down x/y' cant find a free spot.
+            y_left = -2  
+            x_right = -2 
+            y_right = 0 # effectively up right 45 deg
 
-            else:
-                # No tilt
-                down_x = -1 
-                down_y = 0 
-                x_left = -1 
-                y_left = -1
-                x_right = -1
-                y_right = 1
+        elif Direction == g.W:
+            down_x = -1 
+            down_y = 0 
+            x_left = -1 
+            y_left = -1
+            x_right = -1
+            y_right = 1
 
-        elif Direction == g.GRAVITY_RIGHT:
-            # right side down so swap axis, ie x axis now controls 'gravity' direction and y across the hourglass
-            if Tiltleft:
-                down_x = 1 
-                down_y = 1 
-                x_left = -1 
-                y_left = 1 
-                x_right = 1
-                y_right = 1
-
-            elif Tiltright:
-                down_x = 1 
-                down_y = -1 
-                x_left = 1 
-                y_left = -1
-                x_right = -1 
-                y_right = -1
-
-            else:
-                # No tilt
-                down_x = 1 
-                down_y = 0 
-                x_left = 0 
-                y_left = 1
-                x_right = 0
-                y_right = -1
+        elif Direction == g.E:
+            down_x = 1 
+            down_y = 0 
+            x_left = 1 
+            y_left = 1
+            x_right = 1
+            y_right = -1
 
         elif Direction == g.FLAT: # Nothing to do....
             down_x = 0
@@ -354,7 +320,6 @@ def update_grains():
             y_left = 0
             y_right = 0            
         
-
         #print(Direction, step_x,step_y,x_left,x_right,y_left,y_right)
 
         for i in range(0, g.no_grains-1):
@@ -436,7 +401,7 @@ def update_grains():
         total_move_count = total_move_count + update_count # Add count for the current pass
         #print(pass_count, total_move_count, update_count)
 
-        if display_update == 10:  # Only update every other pass to improve performance
+        if display_update == 20:  # Only update every other pass to improve performance
             # Update screen to display all grains moved this pass
             g.st7789.display(g.image, g.hg_tl_x,g.hg_tl_y,g.hg_br_x,g.hg_br_y)  # update hourglass image only
             display_update = 0

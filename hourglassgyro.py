@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 #############################################################################
 # Filename    : hourglassgyro.py
-# Description :	Module to read the gyro sensor for the hourglass application
+# Description :	Module to read the gyro sensor for the hourglass application and return compass directions
 # Author      : Trevor Fillary
-# modification: 29-08-2021
+# modification: 25-08-2021
 ########################################################################
 
 import smbus			#import SMBus module of I2C
@@ -66,7 +66,7 @@ def read_raw_data(addr):
         value = value - 65536
     return value
 
-# Useful general routine NOT used in this application
+# NOTE: Useful general routine NOT used in this application
 def read_gyro_data():
     #Read Accelerometer raw value
     acc_x = read_raw_data(ACCEL_XOUT_H)
@@ -91,8 +91,8 @@ def read_gyro_data():
 
 def read_gyro_xy():
     # Cut down routine to just read the x and y accelerometer values used.  
-    # Ax and Ay are used to determine the orientation of the hourglass, either Upright/Upside down/Left down/Right down
-    # Return gravity direction and whether there is a tilt in progress
+    # Ax and Ay are used to determine the orientation of the hourglass gravity, either N/S/E/W/NE/NW/SE/SW
+    # Return gravity direction
     
     # Read Accelerometer raw value
     acc_x = read_raw_data(ACCEL_XOUT_H)
@@ -101,59 +101,35 @@ def read_gyro_xy():
     Ay = acc_x/16384.0      # x & y swaped due to sensor orientationin the Pi Zero case
     Ax = acc_y/16384.0
 
-    # Ax and Ay are used to determine the orientation of the hourglass, either Upright/Upside down/Left down/Right down
+    # Ax and Ay are used to determine the orientation of the hourglass, either N/S/E/W/NE/NW/SE/SW
 
-    Tiltleft = False
-    Tiltright = False
-
-    # Used to establish gravity direction
+    # Establish gravity direction
     Direction = g.FLAT  # default - ie gravity has no effect on the grains
 
-    if Ay > 0.7:
-        Direction = g.UPSIDE_DOWN
-        # Set tilt limits
-        if Ax >0.15 and Ax <0.75:
-            # Upside down bottom right 
-            Tiltright = True
+    if Ay > 0.85:
+        Direction = g.N # Upside down
 
-        if Ax <-0.15 and Ax >-0.75:
-            # Upside down bottom left 
-            Tiltleft = True
-
-    elif Ay < -0.7:
-        Direction = g.RIGHTWAY_UP
-        # Set tilt limits
-        if Ax >0.15 and Ax <0.75:
-            # Upright bottom left 
-            Tiltleft = True
-
-        if Ax <-0.15 and Ax >-0.75:
-            # Upright bottom right 
-            Tiltright = True
+    elif Ay < -0.85:
+        Direction = g.S # Right way up
 
     elif Ax > 0.7:
-        Direction = g.GRAVITY_LEFT
-        # Set tilt limits
-        if Ay >0.15 and Ay <0.75:
-            # Left bottom left 
-            Tiltleft = True
-        
-        if Ay <-0.15 and Ay >-0.75:
-            # Left bottom right
-            Tiltright = True
+        Direction = g.W # Tilt left
 
     elif Ax < -0.7:
-        Direction = g.GRAVITY_RIGHT
-        # Set tilt limits
-        if Ay >0.15 and Ay <0.75:
-            # Right bottom left 
-            Tiltright = True
-        
-        if Ay <-0.15 and Ay >-0.75:
-            # Right bottom right
-            Tiltleft = True
+        Direction = g.E # Tilt right
+
+    elif Ay < 0 and Ay > -0.85 and Ax > 0 and Ax < 0.7:
+        Direction = g.SW
+    
+    elif Ay < 0 and Ay > -0.85 and Ax > -0.7:
+        Direction = g.SE
+
+    elif Ay < 0.85 and Ax > 0 and Ax < 0.7:
+        Direction = g.NW
+    
+    elif Ay > -0.85 and Ax > -0.7:
+        Direction = g.NE
 
     #print(Ax,Ay)
-    #print(Direction, Tiltleft, Tiltright)
-
-    return Direction, Tiltleft, Tiltright
+    #print(Direction)
+    return Direction

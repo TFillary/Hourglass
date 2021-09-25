@@ -6,7 +6,7 @@
 #               Inspiration from https://hackaday.io/project/165620-digital-hourglass, but developed from scratch
 #               Can take any 'typical' hourglass graphic and work out where to fill it (amount of fill can be changed)
 # Author      : Trevor Fillary
-# modification: 04-09-2021
+# modification: 25-09-2021
 ########################################################################
 
 import time

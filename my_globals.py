@@ -3,15 +3,24 @@
 # Filename    : my_globals.py
 # Description :	Globals for hourglass application
 # Author      : Trevor Fillary
-# modification: 04-09-2021
+# modification: 25-09-2021
 ########################################################################
 
-# Gravity definitions
+# Gravity definitions - For the normal way up gravity is South
 FLAT = 0
-UPSIDE_DOWN = 1
-RIGHTWAY_UP = 2
-GRAVITY_LEFT = 3
-GRAVITY_RIGHT = 4
+N = 1
+S = 2
+E = 3
+W = 4
+NE =5
+NW = 6
+SE = 7
+SW = 8
+# TODO: Delete the following 4 variables when compass points working
+#UPSIDE_DOWN = 1
+#RIGHTWAY_UP = 2
+#GRAVITY_LEFT = 3
+#GRAVITY_RIGHT = 4
 
 mode = 0
 
