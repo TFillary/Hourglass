@@ -401,7 +401,7 @@ def update_grains():
         total_move_count = total_move_count + update_count # Add count for the current pass
         #print(pass_count, total_move_count, update_count)
 
-        if display_update == 20:  # Only update every other pass to improve performance
+        if display_update == 10:  # Only update every other pass to improve performance
             # Update screen to display all grains moved this pass
             g.st7789.display(g.image, g.hg_tl_x,g.hg_tl_y,g.hg_br_x,g.hg_br_y)  # update hourglass image only
             display_update = 0

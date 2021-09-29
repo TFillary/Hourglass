@@ -3,7 +3,7 @@
 # Filename    : hourglassgyro.py
 # Description :	Module to read the gyro sensor for the hourglass application and return compass directions
 # Author      : Trevor Fillary
-# modification: 25-08-2021
+# modification: 29-08-2021
 ########################################################################
 
 import smbus			#import SMBus module of I2C
@@ -97,14 +97,17 @@ def read_gyro_xy():
     # Read Accelerometer raw value
     acc_x = read_raw_data(ACCEL_XOUT_H)
     acc_y = read_raw_data(ACCEL_YOUT_H)
+    acc_z = read_raw_data(ACCEL_ZOUT_H)
 
     Ay = acc_x/16384.0      # x & y swaped due to sensor orientationin the Pi Zero case
     Ax = acc_y/16384.0
+    Az = acc_z/16384.0
 
     # Ax and Ay are used to determine the orientation of the hourglass, either N/S/E/W/NE/NW/SE/SW
 
     # Establish gravity direction
-    Direction = g.FLAT  # default - ie gravity has no effect on the grains
+    if abs(Az) > 0.5:
+        return g.FLAT  # default - ie gravity has no effect on the grains
 
     if Ay > 0.85:
         Direction = g.N # Upside down
@@ -130,6 +133,6 @@ def read_gyro_xy():
     elif Ay > -0.85 and Ax > -0.7:
         Direction = g.NE
 
-    #print(Ax,Ay)
+    #print(Ax,Ay,Az)
     #print(Direction)
     return Direction

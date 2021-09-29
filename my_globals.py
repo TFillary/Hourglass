@@ -3,7 +3,7 @@
 # Filename    : my_globals.py
 # Description :	Globals for hourglass application
 # Author      : Trevor Fillary
-# modification: 25-09-2021
+# modification: 29-09-2021
 ########################################################################
 
 # Gravity definitions - For the normal way up gravity is South
@@ -16,11 +16,6 @@ NE =5
 NW = 6
 SE = 7
 SW = 8
-# TODO: Delete the following 4 variables when compass points working
-#UPSIDE_DOWN = 1
-#RIGHTWAY_UP = 2
-#GRAVITY_LEFT = 3
-#GRAVITY_RIGHT = 4
 
 mode = 0
 
