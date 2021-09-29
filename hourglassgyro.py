@@ -90,9 +90,10 @@ def read_gyro_data():
     print ("Gx=%.2f" %Gx, u'\u00b0'+ "/s", "\tGy=%.2f" %Gy, u'\u00b0'+ "/s", "\tGz=%.2f" %Gz, u'\u00b0'+ "/s", "\tAx=%.2f g" %Ax, "\tAy=%.2f g" %Ay, "\tAz=%.2f g" %Az) 	
 
 def read_gyro_xy():
-    # Cut down routine to just read the x and y accelerometer values used.  
+    # Cut down routine to just read the x, y and z accelerometer values used.  
     # Ax and Ay are used to determine the orientation of the hourglass gravity, either N/S/E/W/NE/NW/SE/SW
-    # Return gravity direction
+    # Az to determine whether the hourglass is leaning towards being flat, ie grains won't flow down any more
+    # Returns gravity direction
     
     # Read Accelerometer raw value
     acc_x = read_raw_data(ACCEL_XOUT_H)
