@@ -2,7 +2,7 @@
 #############################################################################
 # Filename    : grains.py
 # Description :	Utilities to analyse an hourgraph graphic, fill with grains
-#               and move grains
+#               and move grains according to the gravity direction
 # Author      : Trevor Fillary
 # modification: 16-10-2021
 ########################################################################
@@ -240,7 +240,7 @@ def update_grains():
     # x/y left & right are used to check whether the can move 45 degrees left or right
     # All number pairs are added to the 'grain' position for any testing
 
-        if Direction == g.S or g.mode == g.TIMING:  # Force right way up if in timing mode
+        if Direction == g.S or g.mode == g.TIMING or g.mode == g.CAL:  # Force right way up if in timing mode
             down_x = 0 # down x & y are to select next step down, ie straight down
             down_y = 1 # +ve down
             x_left = -1 # x/y left and right are used if 'down x/y' cant find a free spot.  

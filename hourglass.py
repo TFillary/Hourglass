@@ -9,7 +9,13 @@
 #               Can take any 'typical' hourglass graphic and work out where to fill it (amount of fill can be changed)
 #               This implementation has 1238 grains (can be varied as required)
 #               Note that the code has been optimised to run as fast as possible so it does not always use the 
-#               standard python data types
+#               standard python data types.
+#               Modes:  Timer - when initially pressed will run through as quick as possible - orientation is fixed
+#                       Continuous - runs continuously with orientation taken into account
+#                       Set - sets specified hourglass time - when Timer is pushed again will run at set rate 
+#                             - orientation is fixed again
+#                       Cal - runs through like the Timer to calibrate the times.  Should be able to more accurately set
+#                             the specified times.
 # Author      : Trevor Fillary
 # modification: 16-10-2021
 ########################################################################
