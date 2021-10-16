@@ -5,8 +5,10 @@
 #               run an hourglass using a gyro/accelerometer board to control it.
 #               Inspiration from https://hackaday.io/project/165620-digital-hourglass, but developed from scratch
 #               Can take any 'typical' hourglass graphic and work out where to fill it (amount of fill can be changed)
+#               Note that the code has been optimised to run as fast as possible so it does not always use the 
+#               standard python data types
 # Author      : Trevor Fillary
-# modification: 29-09-2021
+# modification: 16-10-2021
 ########################################################################
 
 import time
