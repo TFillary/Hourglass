@@ -90,50 +90,59 @@ def read_gyro_data():
     print ("Gx=%.2f" %Gx, u'\u00b0'+ "/s", "\tGy=%.2f" %Gy, u'\u00b0'+ "/s", "\tGz=%.2f" %Gz, u'\u00b0'+ "/s", "\tAx=%.2f g" %Ax, "\tAy=%.2f g" %Ay, "\tAz=%.2f g" %Az) 	
 
 def read_gyro_xy():
-    # Cut down routine to just read the x, y and z accelerometer values used.  
+    # Cut down routine to just read the x and y accelerometer values used.  
     # Ax and Ay are used to determine the orientation of the hourglass gravity, either N/S/E/W/NE/NW/SE/SW
-    # Az to determine whether the hourglass is leaning towards being flat, ie grains won't flow down any more
-    # Returns gravity direction
+    # Return gravity direction
     
     # Read Accelerometer raw value
     acc_x = read_raw_data(ACCEL_XOUT_H)
     acc_y = read_raw_data(ACCEL_YOUT_H)
     acc_z = read_raw_data(ACCEL_ZOUT_H)
 
-    Ay = acc_x/16384.0      # x & y swaped due to sensor orientationin the Pi Zero case
-    Ax = acc_y/16384.0
-    Az = acc_z/16384.0
+    Ay = int(acc_x/163.84)      # x & y swaped due to sensor orientationin the Pi Zero case
+    Ax = int(acc_y/163.84)
+    Az = int(acc_z/163.84)
 
     # Ax and Ay are used to determine the orientation of the hourglass, either N/S/E/W/NE/NW/SE/SW
+    #print(Ax,Ay,Az)
 
     # Establish gravity direction
-    if abs(Az) > 0.5:
-        return g.FLAT  # default - ie gravity has no effect on the grains
-
-    if Ay > 0.85:
-        Direction = g.N # Upside down
-
-    elif Ay < -0.85:
-        Direction = g.S # Right way up
-
-    elif Ax > 0.7:
-        Direction = g.W # Tilt left
-
-    elif Ax < -0.7:
-        Direction = g.E # Tilt right
-
-    elif Ay < 0 and Ay > -0.85 and Ax > 0 and Ax < 0.7:
-        Direction = g.SW
+    if abs(Az) > 50:
+        return g.FLAT  # hourglass is FLAT, ie gravity has no effect on the grains
     
-    elif Ay < 0 and Ay > -0.85 and Ax > -0.7:
-        Direction = g.SE
+    if Ay < 0: # Right way up - lower half
+        # W and E span both upper and lower halves so need in both sections
+        if Ax > 85:
+            return g.W
 
-    elif Ay < 0.85 and Ax > 0 and Ax < 0.7:
-        Direction = g.NW
-    
-    elif Ay > -0.85 and Ax > -0.7:
-        Direction = g.NE
+        if Ax < -85:
+            return g.E
 
-    #print(Ax,Ay,Az)
-    #print(Direction)
-    return Direction
+        if Ax < 25 and Ax > -25:
+            return g.S
+
+        elif Ax > 25 and Ax < 85:
+            return g.SW
+        
+        elif Ax < -25 and Ax > -85:
+            return g.SE
+       
+    else: # Upside down - upper half
+        # W and E span both upper and lower so need in both sections
+        if Ax > 85:
+            return g.W
+
+        if Ax < -85:
+            return g.E
+            
+        if Ax > -25 and Ax < 25:
+            return g.N
+
+        if Ax > -85 and Ax < -25:
+            return g.NE
+        
+        elif Ax < 85 and Ax > 25:
+            return g.NW
+
+    # Should not reach here - set to do nothing just in case
+    return g.FLAT
