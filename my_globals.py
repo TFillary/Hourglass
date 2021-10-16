@@ -18,6 +18,16 @@ SE = 7
 SW = 8
 
 mode = 0
+# Global 'mode' state variables
+TIMING = 1
+MENU = 2 
+FINISHED = 3
+CONTINUOUS = 4
+SET_MENU = 5
+SET = 6
+CAL = 7
+WAIT = 8
+DO_NOTHING = 99
 
 SCREEN_SIZE = 240 # 240x240 square
 hg_tl_x = 0 # HourGlass Top Left

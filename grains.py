@@ -4,7 +4,7 @@
 # Description :	Utilities to analyse an hourgraph graphic, fill with grains
 #               and move grains
 # Author      : Trevor Fillary
-# modification: 25-09-2021
+# modification: 16-10-2021
 ########################################################################
 import time
 from PIL import Image, ImageDraw, ImageFont
@@ -14,16 +14,6 @@ from ST7789 import ST7789
 import my_globals as g
 from hourglassgyro import read_gyro_xy
 
-# Global state variables
-TIMING = 1
-MENU = 2 
-FINISHED = 3
-CONTINUOUS = 4
-SET_MENU = 5
-SET = 6
-CAL = 7
-WAIT = 8
-DO_NOTHING = 99
 
 # Definitions for the screen
 pixels = None  # Pixel graphic object
@@ -222,7 +212,7 @@ def update_grains():
     # Cycles through the grains to move them to the next available space either one below, lower left or lower right.
     # These checks are performed at all compass directionS - N/S/E/W/NE/NW/SE/SW
     # The grain movement parameters are adjusted to account for the orientation of the hourglass to minimise 
-    # the later on processing.
+    # the later on processing. 
     #
     # Function runs until there are no more grains to move or runs continuously
     # Algorithm is: try moving grain straight down first, if fails then attempt to move down at 45 deg (left and right checks).
@@ -236,19 +226,21 @@ def update_grains():
     display_update = 0 # Used to limit screen updates to every other pass
 
     # Main loop to loop until there is no more grain movement (when being used as a timer) or to run continuously
-    while (g.mode == CONTINUOUS) or not(update_count == 0):
+    while (g.mode == g.CONTINUOUS) or not(update_count == 0):
         
         update_count = 0 # Reset for current pass of the grains
         toggle = True # Used to toggle checking left/right first
         
-        # Get gyro info 
+        # Get gyro direction 
         Direction = read_gyro_xy() 
     
+        #print(Direction)
+
     # Down x/y are used for the inital test to see if can move directly below
     # x/y left & right are used to check whether the can move 45 degrees left or right
     # All number pairs are added to the 'grain' position for any testing
 
-        if Direction == g.S or g.mode == TIMING:  # Force right way up if in timing mode
+        if Direction == g.S or g.mode == g.TIMING:  # Force right way up if in timing mode
             down_x = 0 # down x & y are to select next step down, ie straight down
             down_y = 1 # +ve down
             x_left = -1 # x/y left and right are used if 'down x/y' cant find a free spot.  
@@ -401,14 +393,14 @@ def update_grains():
         total_move_count = total_move_count + update_count # Add count for the current pass
         #print(pass_count, total_move_count, update_count)
 
-        if display_update == 10:  # Only update every other pass to improve performance
+        if display_update == 10:  # Delay update for 'n' passes to improve performance
             # Update screen to display all grains moved this pass
             g.st7789.display(g.image, g.hg_tl_x,g.hg_tl_y,g.hg_br_x,g.hg_br_y)  # update hourglass image only
             display_update = 0
         display_update = display_update + 1
 
         # Don't delay in continuous mode or if no cal has been run        
-        if g.pass_delay != 0 and not g.mode == CONTINUOUS:
+        if g.pass_delay != 0 and not g.mode == g.CONTINUOUS:
             time.sleep((g.pass_delay-0.012)) # subtracted 12ms fudge factor to cal!!
 
     return total_move_count, pass_count

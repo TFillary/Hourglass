@@ -3,8 +3,11 @@
 # Filename    : hourglass.py
 # Description :	Application to use the Pirate Audio board with 240x240 pixel screen + 4 buttons to
 #               run an hourglass using a gyro/accelerometer board to control it.
-#               Inspiration from https://hackaday.io/project/165620-digital-hourglass, but developed from scratch
+#               Inspiration from https://hackaday.io/project/165620-digital-hourglass, but developed from scratch.
+#               Implements a form of Cellular Automata.  Each grain of sand has simple rules applied for it's movement
+#               taking account of the direction of gravity (N,S,E,W,NE,NW,SE,SW).
 #               Can take any 'typical' hourglass graphic and work out where to fill it (amount of fill can be changed)
+#               This implementation has 1238 grains (can be varied as required)
 #               Note that the code has been optimised to run as fast as possible so it does not always use the 
 #               standard python data types
 # Author      : Trevor Fillary
@@ -26,21 +29,10 @@ from grains import analyse_hourglass_graphic, fill_hourglass, update_grains
 # Image variables
 draw = None
 
-# Global state variables
-TIMING = 1
-MENU = 2 
-FINISHED = 3
-CONTINUOUS = 4
-SET_MENU = 5
-SET = 6
-CAL = 7
-WAIT = 8    # TODO: do we need WAIT and DO_NOTHING??
-DO_NOTHING = 99
-
 # Stat variables
 total_move_count = 0
 pass_count = 0
-g.mode = MENU  # default to menu at start
+g.mode = g.MENU  # default to menu at start
 
 
 # Used to set the reqired timing period
@@ -124,54 +116,54 @@ def draw_completed():
 def btn1handler():
     global set_time
     # If TIMING or FINISHED, any button press will go back to the menu
-    if g.mode == TIMING or g.mode == FINISHED:
-        g.mode = MENU
-    elif g.mode == SET:
+    if g.mode == g.TIMING or g.mode == g.FINISHED:
+        g.mode = g.MENU
+    elif g.mode == g.SET:
         set_time = 1.5 # Minutes
-        g.mode = MENU
-    elif g.mode == WAIT:
-        g.mode = MENU        
+        g.mode = g.MENU
+    elif g.mode == g.WAIT:
+        g.mode = g.MENU        
     else: # Menu option for button A is to start timer
-        g.mode = TIMING
+        g.mode = g.TIMING
 
 def btn2handler():
     global set_time
     # If TIMING or FINISHED, any button press will go back to the menu
-    if g.mode == TIMING or g.mode == FINISHED:
-        g.mode = MENU
-    elif g.mode == SET:
+    if g.mode == g.TIMING or g.mode == g.FINISHED:
+        g.mode = g.MENU
+    elif g.mode == g.SET:
         set_time = 6 # Minutes
-        g.mode = MENU
-    elif g.mode == WAIT:
-        g.mode = MENU           
+        g.mode = g.MENU
+    elif g.mode == g.WAIT:
+        g.mode = g.MENU           
     else: # Menu option for button B is to set timer duration
-        g.mode = SET_MENU
+        g.mode = g.SET_MENU
 
 def btn3handler():
     global set_time
     # If TIMING or FINISHED, any button press will go back to the menu
-    if g.mode == TIMING or g.mode == FINISHED:
-        g.mode = MENU
-    elif g.mode == SET:
+    if g.mode == g.TIMING or g.mode == g.FINISHED:
+        g.mode = g.MENU
+    elif g.mode == g.SET:
         set_time = 3 # Minutes
-        g.mode = MENU
-    elif g.mode == WAIT:
-        g.mode = MENU   
+        g.mode = g.MENU
+    elif g.mode == g.WAIT:
+        g.mode = g.MENU   
     else: # Menu option for button X is to run hourglass continuously
-        g.mode = CONTINUOUS
+        g.mode = g.CONTINUOUS
 
 def btn4handler():
     global set_time
     # If TIMING or FINISHED, any button press will go back to the menu
-    if g.mode == TIMING or g.mode == FINISHED:
-        g.mode = MENU
-    elif g.mode == SET:
+    if g.mode == g.TIMING or g.mode == g.FINISHED:
+        g.mode = g.MENU
+    elif g.mode == g.SET:
         set_time = 10 # Minutes
-        g.mode = MENU
-    elif g.mode == WAIT:
-        g.mode = MENU           
+        g.mode = g.MENU
+    elif g.mode == g.WAIT:
+        g.mode = g.MENU           
     else: # Menu option for button Y is to run the calibration
-        g.mode = CAL
+        g.mode = g.CAL
 
 # Setup gyro object
 gyro_init()
@@ -201,45 +193,45 @@ btn3.when_pressed = btn3handler
 btn4.when_pressed = btn4handler
 
 while True:
-    if g.mode == TIMING:
+    if g.mode == g.TIMING:
         game_start = time.time()
         if g.pass_delay != 0:  # Only update if has been through a calibration
             g.pass_delay = (set_time*60/pass_count) - (cal_time/pass_count)
         total_move_count, pass_count = update_grains()
-        g.mode = FINISHED
+        g.mode = g.FINISHED
 
     # Run continuously to allow playing with hourglass
-    elif g.mode == CONTINUOUS:
+    elif g.mode == g.CONTINUOUS:
         total_move_count, pass_count = update_grains()
-        g.mode = MENU
+        g.mode = g.MENU
 
     # Display the timer set options
-    elif g.mode == SET_MENU:
+    elif g.mode == g.SET_MENU:
         draw_set()
-        g.mode = SET # Set mode for buttion selection
+        g.mode = g.SET # Set mode for buttion selection
         
-    elif g.mode == CAL:
+    elif g.mode == g.CAL:
         cal_start = time.time()
         total_move_count, pass_count = update_grains()
         cal_time = time.time() - cal_start
         g.pass_delay = (set_time*60/pass_count) - (cal_time/pass_count)
         #print(cal_time,pass_delay,pass_count, total_move_count)
-        g.mode = MENU # Set mode for buttion selection
+        g.mode = g.MENU # Set mode for buttion selection
 
     # Draw initial screen and menu
-    elif g.mode == MENU:
+    elif g.mode == g.MENU:
         g.no_grains = 0 # ready to start again
         draw_menu() # Load hourglass graphic and add menu options
         analyse_hourglass_graphic() # Set up useful constants based on graphic size/position
         fill_hourglass() # Fill top of hourglass
-        g.mode = DO_NOTHING  # Dont do anything until a button is pressed.
+        g.mode = g.DO_NOTHING  # Dont do anything until a button is pressed.
 
-    if g.mode == FINISHED:
+    if g.mode == g.FINISHED:
         game_end = time.time()
         duration = game_end - game_start
         draw_completed()
         #print(duration)
-        g.mode = WAIT
+        g.mode = g.WAIT
 
 
     #time.sleep(0.05)
