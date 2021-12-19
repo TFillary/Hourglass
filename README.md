@@ -16,8 +16,8 @@ Inspiration from https://hackaday.io/project/165620-digital-hourglass, but devel
 ## Note that the code has been optimised to run as fast as possible so it does not always use the standard python data types, ie minmised use of floating point and used simple arrays instead of lists.
 ## Also, the original target was the Raspberry Pi Zero W, so the code was structured to be able to use Cython to run smoothly enough.  Now runs natively on the Raspberry Pi Zero 2 W which is fast enought with Python.
 
-
-![image](https://user-images.githubusercontent.com/30411837/146686568-4c33ea34-a891-40af-9da4-bd581183cf6d.png)
 ![image](https://user-images.githubusercontent.com/30411837/146686590-3b8019ee-bb5f-4212-b62c-7b6685081622.png)
+![image](https://user-images.githubusercontent.com/30411837/146686568-4c33ea34-a891-40af-9da4-bd581183cf6d.png)
+
 
 
